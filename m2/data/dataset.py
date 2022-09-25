@@ -56,7 +56,7 @@ class ValueDataset(Dataset):
                 value_tensors[k] = [v[s:e] for (s, e) in zip(lengths[:-1], lengths[1:])]
 
             return value_tensors
-        
+
         return collate
 
     def __getitem__(self, i):
@@ -79,12 +79,12 @@ class DictionaryDataset(Dataset):
             key_fields = (key_fields,)
         for field in key_fields:
             assert (field in fields)
-        
+
         if not isinstance(aux_fields, (tuple, list)):
             aux_fields = (aux_fields,)
         for field in aux_fields:
             assert (field in fields) and (field not in key_fields)
-        
+
         key_fields = {k: fields[k] for k in key_fields}
         aux_fields = {k: fields[k] for k in aux_fields}
         value_fields = {k: fields[k] for k in fields.keys() if k not in key_fields and k not in aux_fields}
@@ -146,7 +146,7 @@ class PairedDataset(Dataset):
         self.text_field = self.fields['text']
         self.txt_ctx_field = self.fields["txt_ctx"]
         self.vis_ctx_field = self.fields["vis_ctx"]
-        
+
     def image_set(self):
         img_list = [e.object for e in self.examples]
         image_set = unique(img_list)
@@ -164,7 +164,7 @@ class PairedDataset(Dataset):
     def image_dictionary(self, fields=None):
         if not fields:
             fields = self.fields
-        
+
         aux_fields = ["img_id", "txt_ctx", "vis_ctx"]
         dataset = DictionaryDataset(
             self.examples, fields, key_fields='object', aux_fields=aux_fields
@@ -174,7 +174,7 @@ class PairedDataset(Dataset):
     def text_dictionary(self, fields=None):
         if not fields:
             fields = self.fields
-        
+
         aux_fields = ["img_id", "txt_ctx", "vis_ctx"]
         dataset = DictionaryDataset(
             self.examples, fields, key_fields='text', aux_fields=aux_fields
@@ -188,14 +188,14 @@ class PairedDataset(Dataset):
 
 class COCO(PairedDataset):
     def __init__(
-        self, fields, ann_root, id_root=None, use_restval=True, cut_validation=False
+            self, fields, ann_root, id_root=None, use_restval=True, cut_validation=False
     ):
         roots = {}
         roots['train'] = os.path.join(ann_root, 'captions_train2014.json')
         roots['val'] = os.path.join(ann_root, 'captions_val2014.json')
         roots['test'] = os.path.join(ann_root, 'captions_val2014.json')
         roots['trainrestval'] = (roots['train'], roots['val'])
-        
+
         if id_root is not None:
             ids = {}
             ids['train'] = np.load(os.path.join(id_root, 'coco_train_ids.npy'))
@@ -216,7 +216,7 @@ class COCO(PairedDataset):
         with nostdout():
             self.train_examples, self.val_examples, self.test_examples = self.get_samples(roots, ids)
         examples = self.train_examples + self.val_examples + self.test_examples
-        
+
         super(COCO, self).__init__(examples, fields)
 
     @property
@@ -241,7 +241,7 @@ class COCO(PairedDataset):
                 ids = list(coco_dataset.anns.keys())
             else:
                 ids = ids_dataset[split]
-            
+
             if isinstance(ids, tuple):
                 bp = len(ids[0])
                 ids = list(ids[0]) + list(ids[1])
@@ -277,4 +277,3 @@ class COCO(PairedDataset):
                     test_samples.append(example)
 
         return train_samples, val_samples, test_samples
-

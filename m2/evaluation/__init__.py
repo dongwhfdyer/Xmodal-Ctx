@@ -14,7 +14,7 @@ def compute_scores(gts, gen):
         score, scores = metric.compute_score(gts, gen)
         all_score[str(metric)] = score
         all_scores[str(metric)] = scores
-    
+
     spice = Spice()
     score, scores = spice.compute_score(gts, gen)
     all_score["SPICE"] = score

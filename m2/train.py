@@ -28,7 +28,6 @@ import shutil
 import json
 import math
 
-
 random.seed(1234)
 torch.manual_seed(1234)
 np.random.seed(1234)
@@ -57,7 +56,7 @@ def evaluate_loss(model, dataloader, loss_fn, text_field):
                 out = out[:, :-1].contiguous()
                 captions_gt = captions[:, 1:].contiguous()
                 loss = loss_fn(out.view(-1, len(text_field.vocab)), captions_gt.view(-1))
-                
+
                 running_loss += loss.item()
                 pbar.set_postfix(loss=running_loss / (it + 1))
                 pbar.update()
@@ -138,7 +137,7 @@ def train_xe(model, dataloader, optim, text_field):
 
     loss = running_loss / len(dataloader)
     ret = {"loss": loss}
-    
+
     return ret
 
 
@@ -168,7 +167,7 @@ def train_scst(model, dataloader, optim, cider, text_field):
                 obj=obj, vis_ctx=vis_ctx, txt_ctx=txt_ctx, max_len=seq_len, mode="rl",
                 eos_idx=text_field.vocab.stoi['<eos>'], beam_size=beam_size, out_size=beam_size,
             )
-            
+
             # Rewards
             caps_gen = text_field.decode(out.view(-1, seq_len))
             caps_gt = list(itertools.chain(*([c, ] * beam_size for c in data["text"])))
@@ -190,7 +189,7 @@ def train_scst(model, dataloader, optim, cider, text_field):
             pbar.set_postfix(loss=running_loss / (it + 1), reward=running_reward / (it + 1),
                              reward_baseline=running_reward_baseline / (it + 1))
             pbar.update()
-    
+
     tokenizer_pool.close()
     loss = running_loss / len(dataloader)
     reward = running_reward / len(dataloader)
@@ -207,7 +206,7 @@ def train_scst(model, dataloader, optim, cider, text_field):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Meshed-Memory Transformer')
     parser.add_argument('--exp_name', type=str, default='[m2][xmodal-ctx]')
-    parser.add_argument('--batch_size', type=int, default=50)
+    parser.add_argument('--batch_size', type=int, default=5)
     parser.add_argument('--bs_reduct', type=int, default=5)
     parser.add_argument('--workers', type=int, default=6)
     parser.add_argument('--m', type=int, default=40)
@@ -217,29 +216,29 @@ if __name__ == '__main__':
     parser.add_argument('--lr_rl', type=float, default=5e-6)
     parser.add_argument('--wd_rl', type=float, default=0.05)
     parser.add_argument('--drop_rate', type=float, default=0.3)
-    parser.add_argument('--devices', nargs='+', type=int, default=[0])
+    parser.add_argument('--devices', nargs='+', type=int, default=[0, 1])
     parser.add_argument('--dataset_root', type=str, default="./datasets")
     parser.add_argument('--obj_file', type=str, default="oscar.hdf5")
     parser.add_argument('--preload', action='store_true')
     parser.add_argument('--resume_last', action='store_true')
     parser.add_argument('--resume_best', action='store_true')
     args = parser.parse_args()
-    
+
     args.dataset_root = Path(args.dataset_root)
-    setattr(args, "save_dir", Path("outputs")/args.exp_name)
+    setattr(args, "save_dir", Path("outputs") / args.exp_name)
     if not (args.resume_last or args.resume_best):
         shutil.rmtree(args.save_dir, ignore_errors=True)
     args.save_dir.mkdir(parents=True, exist_ok=True)
-    
+
     print(args)
     print('Meshed-Memory Transformer Training')
 
     device = torch.device(args.devices[0])
-    writer = SummaryWriter(log_dir=args.save_dir/"tensorboard")
+    writer = SummaryWriter(log_dir=args.save_dir / "tensorboard")
 
     # Create the dataset
     object_field = ImageDetectionsField(
-        obj_file=args.dataset_root/args.obj_file,
+        obj_file=args.dataset_root / args.obj_file,
         max_detections=50, preload=args.preload
     )
     text_field = TextField(
@@ -247,17 +246,17 @@ if __name__ == '__main__':
         remove_punctuation=True, nopoints=False
     )
     txt_ctx_filed = TxtCtxField(
-        ctx_file=args.dataset_root/"txt_ctx.hdf5", k=args.topk, preload=args.preload
+        ctx_file=args.dataset_root / "txt_ctx.hdf5", k=args.topk, preload=args.preload
     )
     vis_ctx_filed = VisCtxField(
-        ctx_file=args.dataset_root/"vis_ctx.hdf5", preload=args.preload
+        ctx_file=args.dataset_root / "vis_ctx.hdf5", preload=args.preload
     )
 
     fields = {
         "object": object_field, "text": text_field, "img_id": RawField(),
         "txt_ctx": txt_ctx_filed, "vis_ctx": vis_ctx_filed
     }
-    dset = args.dataset_root/"annotations"
+    dset = args.dataset_root / "annotations"
     dataset = COCO(fields, dset, dset)
     train_dataset, val_dataset, test_dataset = dataset.splits
 
@@ -268,10 +267,10 @@ if __name__ == '__main__':
     dict_dataset_train = train_dataset.image_dictionary(fields)
     dict_dataset_val = val_dataset.image_dictionary(fields)
     dict_dataset_test = test_dataset.image_dictionary(fields)
-    
+
     ref_caps_train = list(train_dataset.text)
     cider_train = Cider(PTBTokenizer.tokenize(ref_caps_train))
-    
+
     # build vocabulary
     vocab_file = 'vocab/vocab_coco.pkl'
     if not os.path.isfile(vocab_file):
@@ -305,7 +304,7 @@ if __name__ == '__main__':
     ]
     grouped_parameters = [
         {'params': [p for n, p in model.named_parameters() if not \
-                    any(nd in n for nd in no_decay)], 'weight_decay': 0.05},
+            any(nd in n for nd in no_decay)], 'weight_decay': 0.05},
         {'params': [p for n, p in model.named_parameters() if \
                     any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
     ]
@@ -322,7 +321,7 @@ if __name__ == '__main__':
     # resume training
     if args.resume_last or args.resume_best:
         fname = "ckpt_last.pth" if args.resume_last else "ckpt_best.pth"
-        fname = args.save_dir/fname
+        fname = args.save_dir / fname
 
         if os.path.exists(fname):
             data = torch.load(fname)
@@ -349,13 +348,13 @@ if __name__ == '__main__':
             val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.workers, drop_last=False
         )
         dict_dataloader_train = DataLoader(
-            dict_dataset_train, batch_size=math.floor(args.batch_size//args.bs_reduct), shuffle=True, num_workers=1, drop_last=True
+            dict_dataset_train, batch_size=math.floor(args.batch_size // args.bs_reduct), shuffle=True, num_workers=1, drop_last=True
         )
         dict_dataloader_val = DataLoader(
-            dict_dataset_val, batch_size=math.floor(args.batch_size//5), shuffle=False, num_workers=1, drop_last=False
+            dict_dataset_val, batch_size=math.floor(args.batch_size // 5), shuffle=False, num_workers=1, drop_last=False
         )
         dict_dataloader_test = DataLoader(
-            dict_dataset_test, batch_size=math.floor(args.batch_size//5), shuffle=False, num_workers=1, drop_last=False
+            dict_dataset_test, batch_size=math.floor(args.batch_size // 5), shuffle=False, num_workers=1, drop_last=False
         )
 
         # training epoch
@@ -401,9 +400,9 @@ if __name__ == '__main__':
             best_cider = val_cider
             patience = 0
             best = True
-            with open(args.save_dir/"best_val_scores.json", "w") as f:
+            with open(args.save_dir / "best_val_scores.json", "w") as f:
                 json.dump(val_scores, f)
-            with open(args.save_dir/"best_test_scores.json", "w") as f:
+            with open(args.save_dir / "best_test_scores.json", "w") as f:
                 json.dump(test_scores, f)
         else:
             patience += 1
@@ -417,9 +416,9 @@ if __name__ == '__main__':
                 patience = 0
                 grouped_parameters = [
                     {'params': [p for n, p in model.named_parameters() if not \
-                                any(nd in n for nd in no_decay)], 'weight_decay': args.wd_rl},
+                        any(nd in n for nd in no_decay)], 'weight_decay': args.wd_rl},
                     {'params': [p for n, p in model.named_parameters() if \
-                        any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
+                                any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
                 ]
                 optim = AdamW(grouped_parameters, lr=args.lr_rl, eps=1e-8)
                 print("Switching to RL")
@@ -428,7 +427,7 @@ if __name__ == '__main__':
                 exit_train = True
 
         if switch_to_rl and not best:
-            data = torch.load(args.save_dir/'ckpt_best.pth')
+            data = torch.load(args.save_dir / 'ckpt_best.pth')
             torch.set_rng_state(data['torch_rng_state'])
             torch.cuda.set_rng_state(data['cuda_rng_state'])
             np.random.set_state(data['numpy_rng_state'])
@@ -453,10 +452,10 @@ if __name__ == '__main__':
             'patience': patience,
             'best_cider': best_cider,
             'use_rl': use_rl,
-        }, args.save_dir/'ckpt_last.pth')
+        }, args.save_dir / 'ckpt_last.pth')
 
         if best:
-            copyfile(args.save_dir/'ckpt_last.pth', args.save_dir/'ckpt_best.pth')
+            copyfile(args.save_dir / 'ckpt_last.pth', args.save_dir / 'ckpt_best.pth')
 
         if exit_train:
             writer.close()

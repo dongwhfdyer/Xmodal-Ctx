@@ -35,7 +35,7 @@ class Transformer(CaptioningModel):
         dec_output = self.decoder(seq, enc_output, enc_mask)
 
         return dec_output
-    
+
     def forward_rl(self, obj, vis_ctx, txt_ctx, max_len, eos_idx, beam_size, out_size=1, return_probs=False):
         bs = BeamSearch(self, max_len, eos_idx, beam_size)
         return bs.apply(obj, vis_ctx, txt_ctx, out_size, return_probs)

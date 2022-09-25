@@ -15,11 +15,11 @@ import shutil
 
 def generate_lineidx_file(filein, idxout):
     idxout_tmp = idxout + '.tmp'
-    with open(filein, 'r') as tsvin, open(idxout_tmp,'w') as tsvout:
+    with open(filein, 'r') as tsvin, open(idxout_tmp, 'w') as tsvout:
         fsize = os.fstat(tsvin.fileno()).st_size
         fpos = 0
-        while fpos!=fsize:
-            tsvout.write(str(fpos)+"\n")
+        while fpos != fsize:
+            tsvout.write(str(fpos) + "\n")
             tsvin.readline()
             fpos = tsvin.tell()
     os.rename(idxout_tmp, idxout)
@@ -107,10 +107,10 @@ if __name__ == "__main__":
 
     f = h5py.File(args.save_file, "w")
     for split in ["train", "val", "test"]:
-        feat_tsv = TSVFile(str(args.features_dir/f"{split}.feature.tsv"))
-        label_tsv = TSVFile(str(args.features_dir/f"{split}.label.tsv"))
+        feat_tsv = TSVFile(str(args.features_dir / f"{split}.feature.tsv"))
+        label_tsv = TSVFile(str(args.features_dir / f"{split}.label.tsv"))
         ids2index = {label_tsv.seek(i)[0]: i for i in range(label_tsv.num_rows())}
-        
+
         print(f"Start parsing the {split} set.")
         for img_id in tqdm(ids2index.keys(), dynamic_ncols=True):
             idx = ids2index[str(img_id)]
@@ -123,5 +123,5 @@ if __name__ == "__main__":
                 str(img_id), data=features, compression="gzip", chunks=True
             )
             f.attrs["num_boxes"] = num_boxes
-    
+
     f.close()

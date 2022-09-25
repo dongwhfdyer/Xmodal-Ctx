@@ -9,11 +9,13 @@
 
 from .cider_scorer import CiderScorer
 
+
 class Cider:
     """
     Main Class to compute the CIDEr metric
 
     """
+
     def __init__(self, gts=None, n=4, sigma=6.0):
         # set cider to sum over 1 to 4-grams
         self._n = n
@@ -33,7 +35,7 @@ class Cider:
                 res (dict)  : dictionary with key <image> and value <tokenized reference sentence>
         :return: cider (float) : computed CIDEr score for the corpus
         """
-        assert(gts.keys() == res.keys())
+        assert (gts.keys() == res.keys())
         cider_scorer = CiderScorer(gts, test=res, n=self._n, sigma=self._sigma, doc_frequency=self.doc_frequency,
                                    ref_len=self.ref_len)
         return cider_scorer.compute_score()

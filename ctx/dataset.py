@@ -11,7 +11,6 @@ from torch.utils.data import Dataset
 from transformers import CLIPProcessor
 from torchvision.transforms import functional as F
 
-
 LENGTH_LIMIT = 75
 
 
@@ -38,13 +37,13 @@ def collate_tokens(batch):
         if l < max_len:
             p = torch.zeros(size=(1, max_len - l), dtype=input_ids[i].dtype)
             input_pad.append(torch.cat([input_ids[i], p], dim=1))
-            
+
             p = torch.zeros(size=(1, max_len - l), dtype=attention_mask[i].dtype)
             atten_pad.append(torch.cat([attention_mask[i], p], dim=1))
         else:
             input_pad.append(input_ids[i])
             atten_pad.append(attention_mask[i])
-    
+
     input_pad = torch.cat(input_pad)
     atten_pad = torch.cat(atten_pad)
     assert input_pad.shape[1] <= LENGTH_LIMIT
@@ -68,17 +67,17 @@ class VisualGenomeCaptions(Dataset):
     @staticmethod
     def combination(l1, l2):
         return [" ".join(x) for x in itertools.product(l1, l2)]
-    
+
     def process_word(self, s):
         return s.lower().strip().translate(self.translator)
-    
+
     def process_synset(self, s):
         return s.lower().strip().translate(self.translator).split(".")[0]
-    
+
     def parse_annotations(self, ann_dir):
         print("loading object attributes...")
         objs = {}
-        with open(ann_dir/"attributes.json", "r") as f:
+        with open(ann_dir / "attributes.json", "r") as f:
             attributes = json.load(f)
         for x in tqdm(attributes, dynamic_ncols=True):
             for a in x["attributes"]:
@@ -94,7 +93,7 @@ class VisualGenomeCaptions(Dataset):
 
         print("loading object relationships...")
         rels = set()
-        with open(ann_dir/"relationships.json", "r") as f:
+        with open(ann_dir / "relationships.json", "r") as f:
             relationships = json.load(f)
         for x in tqdm(relationships, dynamic_ncols=True):
             for r in x["relationships"]:
@@ -114,7 +113,6 @@ class VisualGenomeCaptions(Dataset):
                 if a != "":
                     caps_obj.append(f"{a} {o}")
 
-
         print("parsing object relationships...")
         caps_rel = []
         for r in tqdm(rels):
@@ -130,7 +128,7 @@ class VisualGenomeCaptions(Dataset):
 
     def __getitem__(self, index):
         tokens = self.tokenizer(self.caps[index], padding=True, return_tensors="pt")
-        
+
         return self.caps[index], tokens
 
 
@@ -154,24 +152,24 @@ class CocoImageCrops(Dataset):
     @staticmethod
     def parse(ann_dir, img_root):
         ids = (
-            np.load(ann_dir/"coco_train_ids.npy"),
+            np.load(ann_dir / "coco_train_ids.npy"),
             np.concatenate([
-                np.load(ann_dir/"coco_restval_ids.npy"),
-                np.load(ann_dir/"coco_dev_ids.npy"),
-                np.load(ann_dir/"coco_test_ids.npy")
+                np.load(ann_dir / "coco_restval_ids.npy"),
+                np.load(ann_dir / "coco_dev_ids.npy"),
+                np.load(ann_dir / "coco_test_ids.npy")
             ]),
         )
         coco = (
-            pyCOCO(ann_dir/"captions_train2014.json"),
-            pyCOCO(ann_dir/"captions_val2014.json"),
+            pyCOCO(ann_dir / "captions_train2014.json"),
+            pyCOCO(ann_dir / "captions_val2014.json"),
         )
-        img_root = (img_root/"train2014", img_root/"val2014")
+        img_root = (img_root / "train2014", img_root / "val2014")
 
         data = {}
         for i in range(len(ids)):
             for idx in ids[i]:
                 img_id = coco[i].anns[idx]["image_id"]
-                img_file = img_root[i]/coco[i].loadImgs(img_id)[0]["file_name"]
+                img_file = img_root[i] / coco[i].loadImgs(img_id)[0]["file_name"]
                 caption = coco[i].anns[idx]["caption"].strip()
 
                 if img_id in data:
@@ -182,34 +180,34 @@ class CocoImageCrops(Dataset):
                         "image_file": img_file,
                         "captions": [caption, ]
                     }
-        
+
         data = list(data.values())
         data.sort(key=lambda x: x["image_id"])
 
         return data
-        
+
     def five_crop(self, image, ratio=0.6):
         w, h = image.size
-        hw = (h*ratio, w*ratio)
+        hw = (h * ratio, w * ratio)
 
         return F.five_crop(image, hw)
 
     def nine_crop(self, image, ratio=0.4):
         w, h = image.size
 
-        t = (0, int((0.5-ratio/2)*h), int((1.0 - ratio)*h))
-        b = (int(ratio*h), int((0.5+ratio/2)*h), h)
-        l = (0, int((0.5-ratio/2)*w), int((1.0 - ratio)*w))
-        r = (int(ratio*w), int((0.5+ratio/2)*w), w)
+        t = (0, int((0.5 - ratio / 2) * h), int((1.0 - ratio) * h))
+        b = (int(ratio * h), int((0.5 + ratio / 2) * h), h)
+        l = (0, int((0.5 - ratio / 2) * w), int((1.0 - ratio) * w))
+        r = (int(ratio * w), int((0.5 + ratio / 2) * w), w)
         h, w = list(zip(t, b)), list(zip(l, r))
 
         images = []
         for s in itertools.product(h, w):
             h, w = s
             top, left = h[0], w[0]
-            height, width = h[1]-h[0], w[1]-w[0]
+            height, width = h[1] - h[0], w[1] - w[0]
             images.append(F.crop(image, top, left, height, width))
-        
+
         return images
 
     def __len__(self):
@@ -226,7 +224,7 @@ class CocoImageCrops(Dataset):
             orig_image = self.transform(image)
             five_images = torch.stack([self.transform(x) for x in five_images])
             nine_images = torch.stack([self.transform(x) for x in nine_images])
-        
+
         captions = self.data[index]["captions"]
         idx = self.data[index]["image_id"]
 

@@ -10,6 +10,7 @@ from pytorch_lightning import Trainer, LightningModule, seed_everything
 from transformers import CLIPModel, CLIPProcessor
 
 import sys
+
 sys.path.append('.')
 from dataset import CocoImageCrops, collate_crops
 
@@ -20,7 +21,7 @@ class ImageEncoder(LightningModule):
 
         self.save_dir = Path(save_dir)
         self.model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").vision_model
-    
+
     def test_step(self, batch, batch_idx):
         orig_imgs, _, _, _, ids = batch
 
@@ -28,7 +29,7 @@ class ImageEncoder(LightningModule):
         features = features.pooler_output
         features = features.detach().cpu().numpy()
 
-        with h5py.File(self.save_dir/"vis_ctx.hdf5", "a") as f:
+        with h5py.File(self.save_dir / "vis_ctx.hdf5", "a") as f:
             f.attrs["fdim"] = features.shape[-1]
             for i in range(len(orig_imgs)):
                 f.create_dataset(str(int(ids[i])), data=features[i])
@@ -39,7 +40,7 @@ def build_ctx_caps(args):
         CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32").feature_extractor,
         lambda x: torch.FloatTensor(x["pixel_values"][0]),
     ])
-    dset = CocoImageCrops(args.dataset_root/"annotations", args.dataset_root, transform)
+    dset = CocoImageCrops(args.dataset_root / "annotations", args.dataset_root, transform)
     dloader = DataLoader(
         dataset=dset,
         batch_size=args.batch_size,
@@ -68,9 +69,9 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--num_workers', type=int, default=12)
     args = parser.parse_args()
-    
+
     args.dataset_root = Path(args.dataset_root)
-    setattr(args, "save_dir", Path("outputs")/args.exp_name)
+    setattr(args, "save_dir", Path("outputs") / args.exp_name)
     shutil.rmtree(args.save_dir, ignore_errors=True)
     args.save_dir.mkdir(parents=True, exist_ok=True)
     print(args)

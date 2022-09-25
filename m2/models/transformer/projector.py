@@ -40,7 +40,7 @@ class Projector(nn.Module):
                 sinusoid_encoding_table(num_embeddings, f_out), freeze=True
             )
             setattr(self, f"txt_pos_{k}", pos)
-        
+
     def forward(self, obj, vis_ctx, txt_ctx):
         img = vis_ctx[:, None, :]
         embed = []
@@ -60,5 +60,5 @@ class Projector(nn.Module):
             mlp_pos = getattr(self, f"txt_pos_{k}")
             embed_k = mlp1(embed_k) + mlp2(img) + mlp_pos(pos_k)
             embed.append(embed_k)
-        
+
         return torch.cat(embed, dim=1)

@@ -28,6 +28,7 @@ class Vocab(object):
             numerical identifiers.
         itos: A list of token strings indexed by their numerical identifiers.
     """
+
     def __init__(self, counter, max_size=None, min_freq=1, specials=['<pad>'],
                  vectors=None, unk_init=None, vectors_cache=None):
         """Create a Vocab object from a collections.Counter.
@@ -150,7 +151,7 @@ class Vocab(object):
                 end_dim = start_dim + v.dim
                 self.vectors[i][start_dim:end_dim] = v[token.strip()]
                 start_dim = end_dim
-            assert(start_dim == tot_dim)
+            assert (start_dim == tot_dim)
 
     def set_vectors(self, stoi, vectors, dim, unk_init=torch.Tensor.zero_):
         """
@@ -309,7 +310,6 @@ class GloVe(Vectors):
 
 
 class FastText(Vectors):
-
     url_base = 'https://s3-us-west-1.amazonaws.com/fasttext-vectors/wiki.{}.vec'
 
     def __init__(self, language="en", **kwargs):
@@ -319,7 +319,6 @@ class FastText(Vectors):
 
 
 class CharNGram(Vectors):
-
     name = 'charNgram.txt'
     url = ('http://www.logos.t.u-tokyo.ac.jp/~hassy/publications/arxiv2016jmt/'
            'jmt_pre-trained_embeddings.tar.gz')

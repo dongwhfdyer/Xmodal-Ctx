@@ -9,6 +9,7 @@ from pytorch_lightning import Trainer, LightningModule, seed_everything
 from transformers import CLIPModel
 
 import sys
+
 sys.path.append('.')
 from dataset import VisualGenomeCaptions, collate_tokens
 
@@ -33,11 +34,11 @@ class CaptionDB(LightningModule):
         features = self.clip.text_model(**tokens)[1]
         keys = self.clip.text_projection(features)
         keys = keys / keys.norm(dim=-1, keepdim=True)
-        
+
         features = features.detach().cpu().numpy()
         keys = keys.detach().cpu().numpy()
 
-        with h5py.File(self.save_dir/"caption_db.hdf5", "a") as f:
+        with h5py.File(self.save_dir / "caption_db.hdf5", "a") as f:
             g = f.create_group(str(batch_idx))
             g.create_dataset("keys", data=keys, compression="gzip")
             g.create_dataset("features", data=features, compression="gzip")
@@ -73,8 +74,8 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', type=int, default=512)
     parser.add_argument('--num_workers', type=int, default=7)
     args = parser.parse_args()
-    
-    setattr(args, "save_dir", Path("outputs")/args.exp_name)
+
+    setattr(args, "save_dir", Path("outputs") / args.exp_name)
     shutil.rmtree(args.save_dir, ignore_errors=True)
     args.save_dir.mkdir(parents=True, exist_ok=True)
     print(args)

@@ -296,7 +296,7 @@ class ImageDetectionsField(RawField):
             self.obj = h5py.File(obj_file, "r")
 
         super(ImageDetectionsField, self).__init__(preprocessing, postprocessing)
-    
+
     @staticmethod
     def __load(obj_file, k):
         return obj_file[f"{k}/obj_features"][:]
@@ -313,7 +313,7 @@ class ImageDetectionsField(RawField):
         obj_file.close()
 
         return obj
-    
+
     def preprocess(self, image_id):
         if self.preload:
             obj = self.obj[str(image_id)]
@@ -327,9 +327,9 @@ class ImageDetectionsField(RawField):
             obj = np.concatenate([obj, p], axis=0)
         elif delta < 0:
             obj = obj[:self.max_detections]
-        
+
         return torch.FloatTensor(obj)  # obj.shape = (50, 2054)
-    
+
     def process(self, batch, *args, **kwargs):
         batch = torch.stack(batch)
         max_len = torch.max(torch.sum(torch.sum(batch, dim=-1) != 0, dim=-1))
@@ -348,26 +348,26 @@ class TxtCtxField(RawField):
             self.ctx = ctx_file
 
         super(TxtCtxField, self).__init__(preprocessing, postprocessing)
-    
+
     def __load(self, ctx, k):
         ctx_whole_f = ctx[f"{k}/whole/features"][:self.k]
 
         ctx_five_f = ctx[f"{k}/five/features"][:, :self.k]
         ctx_five_p = np.tile(np.arange(5)[:, None], (1, self.k))
-        ctx_five_f = ctx_five_f.reshape((5*self.k, -1))
-        ctx_five_p = ctx_five_p.reshape((5*self.k, ))
+        ctx_five_f = ctx_five_f.reshape((5 * self.k, -1))
+        ctx_five_p = ctx_five_p.reshape((5 * self.k,))
 
         ctx_nine_f = ctx[f"{k}/nine/features"][:, :self.k]
         ctx_nine_p = np.tile(np.arange(9)[:, None], (1, self.k))
-        ctx_nine_f = ctx_nine_f.reshape((9*self.k, -1))
-        ctx_nine_p = ctx_nine_p.reshape((9*self.k, ))
+        ctx_nine_f = ctx_nine_f.reshape((9 * self.k, -1))
+        ctx_nine_p = ctx_nine_p.reshape((9 * self.k,))
 
         return {
             "whole": {"features": ctx_whole_f},
             "five": {"features": ctx_five_f, "positions": ctx_five_p},
             "nine": {"features": ctx_nine_f, "positions": ctx_nine_p}
         }
-    
+
     def load(self, ctx_file):
         print(f"Preload features from {str(ctx_file)}...")
         ctx_file = h5py.File(ctx_file, "r")
@@ -380,7 +380,7 @@ class TxtCtxField(RawField):
         ctx_file.close()
 
         return ctx
-    
+
     def preprocess(self, x):
         if self.preload:
             ctx_whole_f = self.ctx[str(x)]["whole"]["features"]
@@ -405,10 +405,10 @@ class TxtCtxField(RawField):
         ctx_nine_p = torch.LongTensor(ctx_nine_p)
 
         return ctx_whole_f, ctx_five_f, ctx_five_p, ctx_nine_f, ctx_nine_p
-            
+
     def process(self, batch, *args, **kwargs):
         ctx_whole_f, ctx_five_f, ctx_five_p, ctx_nine_f, ctx_nine_p = list(zip(*batch))
-        
+
         ctx_whole_f = torch.stack(ctx_whole_f)
         ctx_five_f = torch.stack(ctx_five_f)
         ctx_nine_f = torch.stack(ctx_nine_f)
@@ -431,7 +431,7 @@ class VisCtxField(RawField):
             self.ctx = self.load(ctx_file)
         else:
             self.ctx = h5py.File(ctx_file, "r")
-        
+
         f = h5py.File(ctx_file, "r")
         self.fdim = f.attrs["fdim"]
         f.close()

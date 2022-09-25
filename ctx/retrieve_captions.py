@@ -14,6 +14,7 @@ from pytorch_lightning import Trainer, LightningModule, seed_everything
 from transformers import CLIPModel, CLIPProcessor
 
 import sys
+
 sys.path.append('.')
 from dataset import CocoImageCrops, collate_crops
 
@@ -26,9 +27,9 @@ class CaptionRetriever(LightningModule):
         self.k = k
 
         self.keys, self.features, self.text = self.load_caption_db(caption_db)
-        self.index = self.build_index(idx_file=self.save_dir/"faiss.index")
+        self.index = self.build_index(idx_file=self.save_dir / "faiss.index")
         self.clip = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-    
+
     @staticmethod
     def load_caption_db(caption_db):
         print("Loading caption db")
@@ -46,7 +47,7 @@ class CaptionRetriever(LightningModule):
         features = np.concatenate(features)
 
         return keys, features, text
-    
+
     def build_index(self, idx_file):
         print("Building db index")
         n, d = self.keys.shape
@@ -57,7 +58,7 @@ class CaptionRetriever(LightningModule):
         index.train(self.keys)
         assert index.is_trained
         index.add(self.keys)
-        index.nprobe = max(1, K//10)
+        index.nprobe = max(1, K // 10)
 
         faiss.write_index(index, str(idx_file))
 
@@ -70,17 +71,17 @@ class CaptionRetriever(LightningModule):
         D, I = self.index.search(query.detach().cpu().numpy(), topk)
 
         return D, I
-    
+
     def test_step(self, batch, batch_idx):
         orig_imgs, five_imgs, nine_imgs, gt_caps, ids = batch
         N = len(orig_imgs)
-        
-        with h5py.File(self.save_dir/"txt_ctx.hdf5", "a") as f:
+
+        with h5py.File(self.save_dir / "txt_ctx.hdf5", "a") as f:
             D_o, I_o = self.search(orig_imgs, topk=self.k)  # N x self.k
-            
+
             D_f, I_f = self.search(torch.flatten(five_imgs, end_dim=1), topk=self.k)  # N*5 x self.k
             D_f, I_f = D_f.reshape(N, 5, self.k), I_f.reshape(N, 5, self.k)
-            
+
             D_n, I_n = self.search(torch.flatten(nine_imgs, end_dim=1), topk=self.k)  # N*9 x self.k
             D_n, I_n = D_n.reshape(N, 9, self.k), I_n.reshape(N, 9, self.k)
 
@@ -124,13 +125,12 @@ class CaptionRetriever(LightningModule):
                 g4.create_dataset("texts", data=texts)
 
 
-
 def build_ctx_caps(args):
     transform = T.Compose([
         CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32").feature_extractor,
         lambda x: torch.FloatTensor(x["pixel_values"][0]),
     ])
-    dset = CocoImageCrops(args.dataset_root/"annotations", args.dataset_root, transform)
+    dset = CocoImageCrops(args.dataset_root / "annotations", args.dataset_root, transform)
     dloader = DataLoader(
         dataset=dset,
         batch_size=args.batch_size,
@@ -165,9 +165,9 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--num_workers', type=int, default=12)
     args = parser.parse_args()
-    
+
     args.dataset_root = Path(args.dataset_root)
-    setattr(args, "save_dir", Path("outputs")/args.exp_name)
+    setattr(args, "save_dir", Path("outputs") / args.exp_name)
     shutil.rmtree(args.save_dir, ignore_errors=True)
     args.save_dir.mkdir(parents=True, exist_ok=True)
     print(args)

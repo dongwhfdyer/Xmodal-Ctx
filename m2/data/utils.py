@@ -1,7 +1,9 @@
 import contextlib, sys
 
+
 class DummyFile(object):
     def write(self, x): pass
+
 
 @contextlib.contextmanager
 def nostdout():
@@ -9,6 +11,7 @@ def nostdout():
     sys.stdout = DummyFile()
     yield
     sys.stdout = save_stdout
+
 
 def reporthook(t):
     """https://github.com/tqdm/tqdm"""
@@ -27,7 +30,9 @@ def reporthook(t):
             t.total = tsize
         t.update((b - last_b[0]) * bsize)
         last_b[0] = b
+
     return inner
+
 
 def get_tokenizer(tokenizer):
     if callable(tokenizer):
