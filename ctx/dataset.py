@@ -172,7 +172,7 @@ class CocoImageCrops(Dataset):
                 img_file = img_root[i] / coco[i].loadImgs(img_id)[0]["file_name"]
                 caption = coco[i].anns[idx]["caption"].strip()
 
-                if img_id in data:
+                if img_id in data:  # one image has multiple captions
                     data[img_id]["captions"].append(caption)
                 else:
                     data[img_id] = {
@@ -210,6 +210,9 @@ class CocoImageCrops(Dataset):
 
         return images
 
+    def trapezoid(self, image, ratio=0):
+        pass
+
     def __len__(self):
         return len(self.data)
 
@@ -219,6 +222,7 @@ class CocoImageCrops(Dataset):
 
         five_images = self.five_crop(image)
         nine_images = self.nine_crop(image)
+        # trapezoid_images = self.trapezoid(image)
 
         if self.transform is not None:
             orig_image = self.transform(image)

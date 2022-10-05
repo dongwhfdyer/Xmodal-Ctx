@@ -72,7 +72,7 @@ class Spice:
                      '-out', out_file.name,
                      '-subset',
                      '-silent'
-                     ]
+                     ]# java -jar -Xmx8G spice-1.0.jar coco-caption/pycocoevalcap/spice/tmp/tmp1wdsxtug -out coco-caption/pycocoevalcap/spice/tmp/tmpkj4h9o4j -subset -silent
         subprocess.check_call(spice_cmd,
                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                               cwd=os.path.dirname(os.path.abspath(__file__)))
@@ -100,3 +100,5 @@ class Spice:
 
     def method(self):
         return "SPICE"
+if __name__ == '__main__':
+    sp = Spice()

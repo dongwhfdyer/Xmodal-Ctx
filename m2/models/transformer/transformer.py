@@ -73,7 +73,7 @@ class TransformerEnsemble(CaptioningModel):
         self.n = len(weight_files)
         self.models = ModuleList([copy.deepcopy(model) for _ in range(self.n)])
         for i in range(self.n):
-            state_dict_i = torch.load(weight_files[i])['state_dict']
+            state_dict_i = torch.load(weight_files[i], map_location=torch.device("cuda"))['state_dict']
             self.models[i].load_state_dict(state_dict_i)
 
     def step(self, t, prev_output, visual, seq, mode='teacher_forcing', **kwargs):

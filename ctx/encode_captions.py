@@ -58,7 +58,7 @@ def build_caption_db(args):
     cap_db = CaptionDB(args.save_dir)
 
     trainer = Trainer(
-        gpus=[args.device, ],
+        gpus=[args.device,],
         deterministic=True,
         benchmark=False,
         default_root_dir=args.save_dir
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     parser.add_argument('--exp_name', type=str, default='captions_db')
     parser.add_argument('--ann_dir', type=str, default='datasets/visual_genome')
     parser.add_argument('--batch_size', type=int, default=512)
-    parser.add_argument('--num_workers', type=int, default=7)
+    parser.add_argument('--num_workers', type=int, default=0)
     args = parser.parse_args()
 
     setattr(args, "save_dir", Path("outputs") / args.exp_name)

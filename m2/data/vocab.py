@@ -292,7 +292,7 @@ class Vectors(object):
             torch.save((self.itos, self.stoi, self.vectors, self.dim), path_pt)
         else:
             logger.info('Loading vectors from {}'.format(path_pt))
-            self.itos, self.stoi, self.vectors, self.dim = torch.load(path_pt)
+            self.itos, self.stoi, self.vectors, self.dim = torch.load(path_pt, map_location=torch.device("cuda"))
 
 
 class GloVe(Vectors):

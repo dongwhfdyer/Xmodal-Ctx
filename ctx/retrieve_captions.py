@@ -73,7 +73,7 @@ class CaptionRetriever(LightningModule):
         return D, I
 
     def test_step(self, batch, batch_idx):
-        orig_imgs, five_imgs, nine_imgs, gt_caps, ids = batch
+        orig_imgs, five_imgs, nine_imgs, _, gt_caps, ids = batch # kuhn edited
         N = len(orig_imgs)
 
         with h5py.File(self.save_dir / "txt_ctx.hdf5", "a") as f:

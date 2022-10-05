@@ -34,11 +34,15 @@ class ImageEncoder(LightningModule):
             for i in range(len(orig_imgs)):
                 f.create_dataset(str(int(ids[i])), data=features[i])
 
+def func1(args):
+    return torch.FloatTensor(args["pixel_values"][0])
+
 
 def build_ctx_caps(args):
     transform = T.Compose([
         CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32").feature_extractor,
-        lambda x: torch.FloatTensor(x["pixel_values"][0]),
+        func1,
+#        lambda x: torch.FloatTensor(x["pixel_values"][0]),
     ])
     dset = CocoImageCrops(args.dataset_root / "annotations", args.dataset_root, transform)
     dloader = DataLoader(
@@ -53,7 +57,7 @@ def build_ctx_caps(args):
     img_encoder = ImageEncoder(args.save_dir)
 
     trainer = Trainer(
-        gpus=[args.device, ],
+        gpus=[args.device,],
         deterministic=True,
         benchmark=False,
         default_root_dir=args.save_dir
@@ -67,7 +71,7 @@ if __name__ == "__main__":
     parser.add_argument('--exp_name', type=str, default='image_features')
     parser.add_argument('--dataset_root', type=str, default='datasets/coco_captions')
     parser.add_argument('--batch_size', type=int, default=32)
-    parser.add_argument('--num_workers', type=int, default=12)
+    parser.add_argument('--num_workers', type=int, default=0)
     args = parser.parse_args()
 
     args.dataset_root = Path(args.dataset_root)

@@ -5,6 +5,7 @@ from data import (
 from data import COCO, DataLoader
 import evaluation
 from evaluation import PTBTokenizer, Cider
+# from data.data_parallel import BalancedDataParallel
 from models.transformer import (
     Transformer, MemoryAugmentedEncoder, MeshedDecoder, ScaledDotProductAttentionMemory,
     Projector
@@ -31,6 +32,9 @@ import math
 random.seed(1234)
 torch.manual_seed(1234)
 np.random.seed(1234)
+
+
+
 
 
 def evaluate_loss(model, dataloader, loss_fn, text_field):
@@ -206,7 +210,7 @@ def train_scst(model, dataloader, optim, cider, text_field):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Meshed-Memory Transformer')
     parser.add_argument('--exp_name', type=str, default='[m2][xmodal-ctx]')
-    parser.add_argument('--batch_size', type=int, default=5)
+    parser.add_argument('--batch_size', type=int, default=50)
     parser.add_argument('--bs_reduct', type=int, default=5)
     parser.add_argument('--workers', type=int, default=6)
     parser.add_argument('--m', type=int, default=40)
@@ -233,7 +237,7 @@ if __name__ == '__main__':
     print(args)
     print('Meshed-Memory Transformer Training')
 
-    device = torch.device(args.devices[0])
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     writer = SummaryWriter(log_dir=args.save_dir / "tensorboard")
 
     # Create the dataset
@@ -295,6 +299,7 @@ if __name__ == '__main__':
         bos_idx=text_field.vocab.stoi['<bos>'],
         encoder=encoder, decoder=decoder, projector=projector
     ).to(device)
+    # model = BalancedDataParallel(gpu0_bsz=60, module=model, dim=0).to(device)
     model = nn.DataParallel(model, device_ids=args.devices)
 
     # optimizer
@@ -312,7 +317,7 @@ if __name__ == '__main__':
     scheduler = get_constant_schedule_with_warmup(optim, num_warmup_steps=args.warmup)
 
     # Initial conditions
-    loss_fn = NLLLoss(ignore_index=text_field.vocab.stoi['<pad>'])
+    loss_fn = NLLLoss(ignore_index=text_field.vocab.stoi['<pad>']).to(device)
     use_rl = False
     best_cider = .0
     patience = 0
@@ -324,7 +329,7 @@ if __name__ == '__main__':
         fname = args.save_dir / fname
 
         if os.path.exists(fname):
-            data = torch.load(fname)
+            data = torch.load(fname, map_location=device)
             torch.set_rng_state(data['torch_rng_state'])
             torch.cuda.set_rng_state(data['cuda_rng_state'])
             np.random.set_state(data['numpy_rng_state'])
@@ -427,7 +432,7 @@ if __name__ == '__main__':
                 exit_train = True
 
         if switch_to_rl and not best:
-            data = torch.load(args.save_dir / 'ckpt_best.pth')
+            data = torch.load(args.save_dir / 'ckpt_best.pth', map_location=device)
             torch.set_rng_state(data['torch_rng_state'])
             torch.cuda.set_rng_state(data['cuda_rng_state'])
             np.random.set_state(data['numpy_rng_state'])
