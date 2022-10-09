@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from models.transformer.utils import sinusoid_encoding_table
+from m2.models.transformer.utils import sinusoid_encoding_table
 
 
 class Projector(nn.Module):
@@ -51,14 +51,46 @@ class Projector(nn.Module):
         obj_embed[obj_mask] = 0.
         embed.append(obj_embed)
 
+        posEncoding = {
+            "five": torch.Tensor([[0.3000, 0.3000, 0.6000, 0.6000],
+                                  [0.7000, 0.3000, 0.6000, 0.6000],
+                                  [0.3000, 0.7000, 0.6000, 0.6000],
+                                  [0.7000, 0.7000, 0.6000, 0.6000],
+                                  [0.5000, 0.5000, 0.6000, 0.6000]]),
+            "nine": torch.Tensor([
+                [0.2, 0.2, 0.4, 0.4, ],
+                [0.2, 0.2, 0.4, 0.4, ],
+                [0.2, 0.2, 0.4, 0.4, ],
+                [0.5, 0.5, 0.4, 0.4, ],
+                [0.5, 0.5, 0.4, 0.4, ],
+                [0.5, 0.5, 0.4, 0.4, ],
+                [0.8, 0.8, 0.4, 0.4, ],
+                [0.8, 0.8, 0.4, 0.4, ],
+                [0.8, 0.8, 0.4, 0.4, ], ]
+            ),
+            "whole": torch.Tensor([[0.5, 0.5, 0.5, 0.5]])
+        }
+
         # ctx T
         for k in self.txt_keys:
             pos_k = txt_ctx[k]["pos"]
             embed_k = txt_ctx[k]["embed"]
+            # ---------kkuhn-block------------------------------ pos encoding
+            posEnc = posEncoding[k].cuda()
+            bt = pos_k.shape[0]
+            posEnc_ = posEnc.unsqueeze(0).repeat(bt, 1, 12).reshape(bt, -1, 4)
+            embed_k_ = torch.concat([embed_k, posEnc_], -1)  # todo
+            # ---------kkuhn-block------------------------------
+
             mlp1 = getattr(self, f"txt_mlp1_{k}")
             mlp2 = getattr(self, f"txt_mlp2_{k}")
             mlp_pos = getattr(self, f"txt_pos_{k}")
-            embed_k = mlp1(embed_k) + mlp2(img) + mlp_pos(pos_k)
+            # #---------kkuhn-block------------------------------ # only for test
+            # temp1 = mlp1(embed_k)
+            # temp2 = mlp2(img)
+            # temp3 = mlp_pos(pos_k)
+            # #---------kkuhn-block------------------------------
+            embed_k = mlp1(embed_k_) + mlp2(img) + mlp_pos(pos_k)
             embed.append(embed_k)
 
-        return torch.cat(embed, dim=1)
+        return torch.cat(embed, dim=1)  # embed includes object detection features, sentence that describe whole image, five seperated sentences, and nine seperated sentences.

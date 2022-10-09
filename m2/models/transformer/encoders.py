@@ -1,8 +1,8 @@
 from torch.nn import functional as F
-from models.transformer.utils import PositionWiseFeedForward
+from m2.models.transformer.utils import PositionWiseFeedForward
 import torch
 from torch import nn
-from models.transformer.attention import MultiHeadAttention
+from m2.models.transformer.attention import MultiHeadAttention
 
 
 class EncoderLayer(nn.Module):
@@ -36,13 +36,20 @@ class MultiLevelEncoder(nn.Module):
 
     def forward(self, input, attention_weights=None):
         # input (b_s, seq_len, d_in)
+        #---------kkuhn-block------------------------------ # only for test
+        d = torch.abs(input)
+        dd = torch.sum(d, dim=-1)
+        ddd = dd == 0
+        dddd = ddd.unsqueeze(1)
+        ddddd = dddd.unsqueeze(1)
+        #---------kkuhn-block------------------------------
         attention_mask = (torch.sum(torch.abs(input), -1) == self.padding_idx).unsqueeze(1).unsqueeze(1)  # (b_s, 1, 1, seq_len)
 
         outs = []
         out = input
         for l in self.layers:
             out = l(out, out, out, attention_mask, attention_weights)
-            outs.append(out.unsqueeze(1))
+            outs.append(out.unsqueeze(1)) #
 
         outs = torch.cat(outs, 1)
         return outs, attention_mask

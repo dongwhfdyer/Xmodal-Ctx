@@ -1,8 +1,14 @@
 import torch
 from torch import nn
 import copy
-from models.containers import ModuleList
-from models.beam_search import *
+import sys
+
+from m2.models.containers import ModuleList
+from m2.models.beam_search import *
+# from models.containers import ModuleList
+# from models.beam_search import *
+
+from ..beam_search import BeamSearch
 from ..captioning_model import CaptioningModel
 
 

@@ -68,7 +68,8 @@ def build_ctx_caps(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Encode images')
     parser.add_argument('--device', type=int, default=0)
-    parser.add_argument('--exp_name', type=str, default='image_features')
+    parser.add_argument('--exp_name', type=str, default='temp')
+    # parser.add_argument('--exp_name', type=str, default='image_features')
     parser.add_argument('--dataset_root', type=str, default='datasets/coco_captions')
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--num_workers', type=int, default=0)

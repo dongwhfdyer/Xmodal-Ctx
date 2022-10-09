@@ -1,8 +1,8 @@
 import torch
 from torch import distributions
-import utils
-from models.containers import Module
-from models.beam_search import *
+from m2 import utils
+from m2.models.containers import Module
+from m2.models.beam_search import *
 
 
 class CaptioningModel(Module):

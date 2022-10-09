@@ -1,5 +1,5 @@
 import torch
-import utils
+from m2 import utils
 
 
 class BeamSearch(object):

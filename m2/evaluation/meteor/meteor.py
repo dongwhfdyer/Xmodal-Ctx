@@ -2,10 +2,14 @@
 # Acknowledge Michael Denkowski for the generous discussion and help
 
 import os
+import sys
+
+
 import subprocess
 import threading
 import tarfile
-from utils import download_from_url
+from m2.utils import download_from_url
+
 
 METEOR_GZ_URL = 'http://aimagelab.ing.unimore.it/speaksee/data/meteor.tgz'
 METEOR_JAR = 'meteor-1.5.jar'

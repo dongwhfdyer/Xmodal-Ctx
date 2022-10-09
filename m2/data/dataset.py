@@ -198,16 +198,16 @@ class COCO(PairedDataset):
 
         if id_root is not None:
             ids = {}
-            ids['train'] = np.load(os.path.join(id_root, 'coco_train_ids.npy')) # [413915,]
-            ids['val'] = np.load(os.path.join(id_root, 'coco_dev_ids.npy')) # [25000,]
-            if cut_validation: # False
+            ids['train'] = np.load(os.path.join(id_root, 'coco_train_ids.npy'))  # [413915,]
+            ids['val'] = np.load(os.path.join(id_root, 'coco_dev_ids.npy'))  # [25000,]
+            if cut_validation:  # False
                 ids['val'] = ids['val'][:5000]
-            ids['test'] = np.load(os.path.join(id_root, 'coco_test_ids.npy')) # [25000,]
-            ids['trainrestval'] = ( # It's a tuple. ([413915,],[152520,])
+            ids['test'] = np.load(os.path.join(id_root, 'coco_test_ids.npy'))  # [25000,]
+            ids['trainrestval'] = (  # It's a tuple. ([413915,],[152520,])
                 ids['train'],
                 np.load(os.path.join(id_root, 'coco_restval_ids.npy')))
 
-            if use_restval: # True
+            if use_restval:  # True
                 roots['train'] = roots['trainrestval']
                 ids['train'] = ids['trainrestval']
         else:
@@ -232,7 +232,7 @@ class COCO(PairedDataset):
         test_samples = []
 
         for split in ['train', 'val', 'test']:
-            if isinstance(roots[split], tuple):
+            if isinstance(roots[split], tuple):  # tackle the situation when "train" and "val" got together.
                 coco_dataset = (pyCOCO(roots[split][0]), pyCOCO(roots[split][1]))
             else:
                 coco_dataset = (pyCOCO(roots[split]),)

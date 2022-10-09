@@ -1,4 +1,8 @@
 import random
+import sys
+import os
+print(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from data import (
     ImageDetectionsField, TextField, TxtCtxField, VisCtxField, RawField
 )
@@ -32,9 +36,6 @@ import math
 random.seed(1234)
 torch.manual_seed(1234)
 np.random.seed(1234)
-
-
-
 
 
 def evaluate_loss(model, dataloader, loss_fn, text_field):
@@ -120,6 +121,8 @@ def train_xe(model, dataloader, optim, text_field):
                 }
                 for k1, v1 in data["txt_ctx"].items()
             }
+            ss = txt_ctx['five']['pos']
+            sss = txt_ctx['nine']['pos']
             vis_ctx = data["vis_ctx"].to(device, non_blocking=True)
             obj = data["object"].to(device, non_blocking=True)
             captions = data["text"].to(device, non_blocking=True)
@@ -263,6 +266,9 @@ if __name__ == '__main__':
     dset = args.dataset_root / "annotations"
     dataset = COCO(fields, dset, dset)
     train_dataset, val_dataset, test_dataset = dataset.splits
+    # #---------kkuhn-block------------------------------ only for test
+    # dd = train_dataset.__getitem__(0)
+    # #---------kkuhn-block------------------------------
 
     fields = {
         "object": object_field, "text": RawField(), "img_id": RawField(),
@@ -271,7 +277,9 @@ if __name__ == '__main__':
     dict_dataset_train = train_dataset.image_dictionary(fields)
     dict_dataset_val = val_dataset.image_dictionary(fields)
     dict_dataset_test = test_dataset.image_dictionary(fields)
-
+    # ---------kkuhn-block------------------------------ only for test
+    dd = dict_dataset_test.__getitem__(0)
+    # ---------kkuhn-block------------------------------
     ref_caps_train = list(train_dataset.text)
     cider_train = Cider(PTBTokenizer.tokenize(ref_caps_train))
 
@@ -291,7 +299,7 @@ if __name__ == '__main__':
     )
     decoder = MeshedDecoder(len(text_field.vocab), 54, 3, text_field.vocab.stoi['<pad>'])
     projector = Projector(
-        f_obj=2054, f_vis=vis_ctx_filed.fdim, f_txt=512,
+        f_obj=2054, f_vis=vis_ctx_filed.fdim, f_txt=516,  # kuhn edited
         f_out=encoder.d_model, drop_rate=args.drop_rate
     )
 
@@ -361,6 +369,8 @@ if __name__ == '__main__':
         dict_dataloader_test = DataLoader(
             dict_dataset_test, batch_size=math.floor(args.batch_size // 5), shuffle=False, num_workers=1, drop_last=False
         )
+        # ---------kkuhn-block------------------------------ only for test
+        # ---------kkuhn-block------------------------------
 
         # training epoch
         if not use_rl:
@@ -433,7 +443,9 @@ if __name__ == '__main__':
 
         if switch_to_rl and not best:
             data = torch.load(args.save_dir / 'ckpt_best.pth', map_location=device)
-            torch.set_rng_state(data['torch_rng_state'])
+            state = data['cuda_rng_state']
+            # convert to ByteTensor
+            state = torch.ByteTensor(state)
             torch.cuda.set_rng_state(data['cuda_rng_state'])
             np.random.set_state(data['numpy_rng_state'])
             random.setstate(data['random_rng_state'])

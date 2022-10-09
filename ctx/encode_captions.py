@@ -58,7 +58,7 @@ def build_caption_db(args):
     cap_db = CaptionDB(args.save_dir)
 
     trainer = Trainer(
-        gpus=[args.device,],
+        gpus=[args.device, ],
         deterministic=True,
         benchmark=False,
         default_root_dir=args.save_dir
