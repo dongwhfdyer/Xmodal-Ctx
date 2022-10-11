@@ -1,4 +1,7 @@
 from __future__ import unicode_literals
+import sys
+import os
+print(os.path.join(os.path.dirname(__file__), '..'))
 import array
 from collections import defaultdict
 from functools import partial
@@ -13,7 +16,8 @@ import torch
 from tqdm import tqdm
 import tarfile
 
-from .utils import reporthook
+from data.utils import reporthook
+# from .utils import reporthook
 
 logger = logging.getLogger(__name__)
 

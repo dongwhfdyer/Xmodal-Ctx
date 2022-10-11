@@ -1,7 +1,9 @@
 import random
+import dill
 import sys
 import os
-print(os.path.join(os.path.dirname(__file__), '..'))
+import time
+
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from data import (
     ImageDetectionsField, TextField, TxtCtxField, VisCtxField, RawField
@@ -239,7 +241,7 @@ if __name__ == '__main__':
 
     print(args)
     print('Meshed-Memory Transformer Training')
-
+    checkTime1 = time.time()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     writer = SummaryWriter(log_dir=args.save_dir / "tensorboard")
 
@@ -258,6 +260,7 @@ if __name__ == '__main__':
     vis_ctx_filed = VisCtxField(
         ctx_file=args.dataset_root / "vis_ctx.hdf5", preload=args.preload
     )
+    checkTime3 = time.time()
 
     fields = {
         "object": object_field, "text": text_field, "img_id": RawField(),
@@ -269,6 +272,7 @@ if __name__ == '__main__':
     # #---------kkuhn-block------------------------------ only for test
     # dd = train_dataset.__getitem__(0)
     # #---------kkuhn-block------------------------------
+    checkTime4 = time.time()
 
     fields = {
         "object": object_field, "text": RawField(), "img_id": RawField(),
@@ -277,9 +281,11 @@ if __name__ == '__main__':
     dict_dataset_train = train_dataset.image_dictionary(fields)
     dict_dataset_val = val_dataset.image_dictionary(fields)
     dict_dataset_test = test_dataset.image_dictionary(fields)
-    # ---------kkuhn-block------------------------------ only for test
-    dd = dict_dataset_test.__getitem__(0)
-    # ---------kkuhn-block------------------------------
+    checkTime5 = time.time()
+
+    # # ---------kkuhn-block------------------------------ only for test
+    # dd = dict_dataset_test.__getitem__(0)
+    # # ---------kkuhn-block------------------------------
     ref_caps_train = list(train_dataset.text)
     cider_train = Cider(PTBTokenizer.tokenize(ref_caps_train))
 
@@ -291,6 +297,37 @@ if __name__ == '__main__':
         pickle.dump(text_field.vocab, open(vocab_file, 'wb'))
     else:
         text_field.vocab = pickle.load(open(vocab_file, 'rb'))
+
+    checkTime6 = time.time()
+    print('Time for building datasets: ', (checkTime3 - checkTime1) / 60, ' minutes')
+    print('Time for building COCO dataset: ', (checkTime4 - checkTime3) / 60, ' minutes')
+    print('Time for building dictionary dataset: ', (checkTime5 - checkTime4) / 60, ' minutes')
+    print('Time for building vocabulary: ', (checkTime6 - checkTime5) / 60, ' minutes')
+    print('Time for building datasets: ', (checkTime6 - checkTime1) / 60, ' minutes')
+    # tempFolder = "temp"
+    # # ---------kkuhn-block------------------------------ save to temp folder
+    # with open(tempFolder + "/text_field.pkl", 'wb') as f:
+    #     pickle.dump(text_field, f)
+    # with open(tempFolder + "/dict_dataset_train.pkl", 'wb') as f:
+    #     pickle.dump(dict_dataset_train, f)
+    # with open(tempFolder + "/dict_dataset_val.pkl", 'wb') as f:
+    #     pickle.dump(dict_dataset_val, f)
+    # with open(tempFolder + "/dict_dataset_test.pkl", 'wb') as f:
+    #     pickle.dump(dict_dataset_test, f)
+    # with open(tempFolder + "/dataset_train.pkl", 'wb') as f:
+    #     pickle.dump(train_dataset, f)
+    # # ---------kkuhn-block------------------------------
+
+    # # ---------kkuhn-block------------------------------ read from file
+    # with open(tempFolder + "/text_field.pkl", 'rb') as f:
+    #     text_field = pickle.load(f)
+    # with open(tempFolder + "/dict_dataset_train.pkl", 'rb') as f:
+    #     dict_dataset_train = pickle.load(f)
+    # with open(tempFolder + "/dict_dataset_val.pkl", 'rb') as f:
+    #     dict_dataset_val = pickle.load(f)
+    # with open(tempFolder + "/dict_dataset_test.pkl", 'rb') as f:
+    #     dict_dataset_test = pickle.load(f)
+    # # ---------kkuhn-block------------------------------
 
     # Model and dataloaders
     encoder = MemoryAugmentedEncoder(

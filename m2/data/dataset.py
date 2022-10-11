@@ -1,9 +1,14 @@
 import os
+import sys
+# print(os.path.join(os.path.dirname(__file__), '..'))
+# sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import numpy as np
 import itertools
 import collections
-from .example import Example
-from .utils import nostdout
+from data.example import Example
+from data.utils import nostdout
+# from .example import Example
+# from .utils import nostdout
 from pycocotools.coco import COCO as pyCOCO
 
 
@@ -196,7 +201,7 @@ class COCO(PairedDataset):
         roots['test'] = os.path.join(ann_root, 'captions_val2014.json')
         roots['trainrestval'] = (roots['train'], roots['val'])
 
-        if id_root is not None:
+        if id_root is not None:  # True
             ids = {}
             ids['train'] = np.load(os.path.join(id_root, 'coco_train_ids.npy'))  # [413915,]
             ids['val'] = np.load(os.path.join(id_root, 'coco_dev_ids.npy'))  # [25000,]
@@ -243,21 +248,21 @@ class COCO(PairedDataset):
                 ids = ids_dataset[split]
 
             if isinstance(ids, tuple):
-                bp = len(ids[0])
-                ids = list(ids[0]) + list(ids[1])
+                bp = len(ids[0])  # the length of "train" ids
+                ids = list(ids[0]) + list(ids[1])  # concat train and val ids
             else:
                 bp = len(ids)
 
             for index in range(len(ids)):
-                if index < bp:
+                if index < bp:  # train
                     coco = coco_dataset[0]
-                else:
+                else:  # val
                     coco = coco_dataset[1]
 
-                ann_id = ids[index]
-                caption = coco.anns[ann_id]['caption']
-                img_id = coco.anns[ann_id]['image_id']
-                filename = coco.loadImgs(img_id)[0]['file_name']
+                ann_id = ids[index]  # e.g. 787980
+                caption = coco.anns[ann_id]['caption']  # e.g. A restroom sign with a picture of a toilet and a sink.
+                img_id = coco.anns[ann_id]['image_id']  # e.g.57870
+                filename = coco.loadImgs(img_id)[0]['file_name']  # e.g. 'train2014/COCO_train2014_00000057870.jpg'
                 filename = f"{filename.split('_')[1]}/{filename}"
 
                 example = {

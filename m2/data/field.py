@@ -1,5 +1,7 @@
 # coding: utf8
+import os
 from collections import Counter, OrderedDict
+import sys
 from torch.utils.data.dataloader import default_collate
 from itertools import chain
 import six
@@ -9,9 +11,14 @@ import h5py
 from tqdm import tqdm
 from multiprocessing.pool import ThreadPool as Pool
 
-from .dataset import Dataset
-from .vocab import Vocab
-from .utils import get_tokenizer
+from data.dataset import Dataset
+from data.vocab import Vocab
+from data.utils import get_tokenizer
+
+
+# from .dataset import Dataset
+# from .vocab import Vocab
+# from .utils import get_tokenizer
 
 
 class RawField(object):
@@ -464,3 +471,13 @@ class VisCtxField(RawField):
 
     def process(self, batch, *args, **kwargs):
         return torch.stack(batch)
+
+
+if __name__ == '__main__':
+    vis_ctx_field = VisCtxField(
+        ctx_file="../datasets/vis_ctx.hdf5",
+        preload=False,
+    )
+
+
+

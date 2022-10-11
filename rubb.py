@@ -94,8 +94,5 @@ def rubb1():
     ddd = dd / 224
     print(ddd)
 
-    print("--------------------------------------------------")
 
 
-if __name__ == '__main__':
-    testExpandTensor()
