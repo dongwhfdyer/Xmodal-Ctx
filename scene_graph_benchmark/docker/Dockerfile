@@ -28,7 +28,27 @@ ENV CONDA_PREFIX=/miniconda/envs/$CONDA_DEFAULT_ENV
 ENV PATH=$CONDA_PREFIX/bin:$PATH
 ENV CONDA_AUTO_UPDATE_CONDA=false
 
+# change the source of conda
+RUN conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/ \
+ && conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/ \
+ && conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge/ \
+ && conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/pytorch/ \
+ && conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/menpo/ \
+ && conda config --set show_channel_urls yes
+
+# change the source of pip
+RUN mkdir -p ~/.pip \
+ && echo "[global] \
+index-url = https://pypi.tuna.tsinghua.edu.cn/simple \
+[install] \
+trusted-host=pypi.tuna.tsinghua.edu.cn" > ~/.pip/pip.conf \
+    && pip install --upgrade pip
+
+
+
 RUN conda install -y ipython h5py nltk joblib jupyter pandas scipy
+
+RUN echo 'nameserver 8.8.8.8'>/etc/resolv.conf
 RUN pip install requests ninja cython yacs>=0.1.8 numpy>=1.19.5 cython matplotlib opencv-python tqdm \
  protobuf tensorboardx pymongo sklearn boto3 scikit-image cityscapesscripts
 RUN pip install azureml-defaults>=1.0.45 azureml.core inference-schema
@@ -61,8 +81,8 @@ RUN echo """syntax on\nfiletype indent on\nset autoindent\nset number\ncolorsche
 
 CMD [ "zsh" ]
 
-# RUN git clone https://github.com/microsoft/scene_graph_benchmark.git \
-#  && cd scene_graph_benchmark \
-#  && python setup.py build develop
+RUN git clone https://github.com/microsoft/scene_graph_benchmark.git \
+&& cd scene_graph_benchmark \
+&& python setup.py build develop
 
-# WORKDIR /scene_graph_benchmark
+WORKDIR /scene_graph_benchmark

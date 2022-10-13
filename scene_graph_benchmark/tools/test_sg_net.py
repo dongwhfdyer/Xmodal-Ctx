@@ -1,19 +1,24 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
-# Copyright (c) 2021 Microsoft Corporation. Licensed under the MIT license. 
+# Copyright (c) 2021 Microsoft Corporation. Licensed under the MIT license.
 # Set up custom environment before nearly anything else is imported
 # NOTE: this should be the first import (no not reorder)
+
+import sys
+
+sys.path.append("/home/pcl/kuhn/Xmodal-Ctx/scene_graph_benchmark")
+print(sys.path)
 from maskrcnn_benchmark.utils.env import setup_environment  # noqa F401 isort:skip
 
 import argparse
 import os
 import json
-
 import torch
 from maskrcnn_benchmark.config import cfg
 from scene_graph_benchmark.config import sg_cfg
 from maskrcnn_benchmark.data import make_data_loader
 from maskrcnn_benchmark.data.datasets.utils.load_files import config_dataset_file
-from maskrcnn_benchmark.engine.inference import inference
+from maskrcnn_benchmark.engine.inferenceModified import inference
+# from maskrcnn_benchmark.engine.inference import inference
 from scene_graph_benchmark.scene_parser import SceneParser
 from scene_graph_benchmark.AttrRCNN import AttrRCNN
 from maskrcnn_benchmark.utils.checkpoint import DetectronCheckpointer
@@ -33,9 +38,9 @@ def run_test(cfg, model, distributed, model_name):
     if cfg.MODEL.KEYPOINT_ON:
         iou_types = iou_types + ("keypoints",)
     output_folders = [None] * len(cfg.DATASETS.TEST)
-    dataset_names = cfg.DATASETS.TEST
-    if cfg.OUTPUT_DIR:
-        if len(dataset_names) == 1:
+    dataset_names = cfg.DATASETS.TEST  # TEST: ("visualgenome/test_vgoi6_clipped.yaml",)
+    if cfg.OUTPUT_DIR:  # Exists
+        if len(dataset_names) == 1:  # True
             output_folder = os.path.join(
                 cfg.OUTPUT_DIR, "inference",
                 os.path.splitext(model_name)[0]
@@ -53,7 +58,8 @@ def run_test(cfg, model, distributed, model_name):
                 mkdir(output_folder)
                 output_folders[idx] = output_folder
     data_loaders_val = make_data_loader(cfg, is_train=False, is_distributed=distributed)
-    labelmap_file = config_dataset_file(cfg.DATA_DIR, cfg.DATASETS.LABELMAP_FILE)
+    labelmap_file = ""
+    # labelmap_file = config_dataset_file(cfg.DATA_DIR, cfg.DATASETS.LABELMAP_FILE)# kuhn edited
     for output_folder, dataset_name, data_loader_val in zip(output_folders, dataset_names, data_loaders_val):
         results = inference(
             model,
@@ -170,17 +176,18 @@ def main():
         )
         synchronize()
 
-    save_dir = ""
+    save_dir = "logs"
     logger = setup_logger("maskrcnn_benchmark", save_dir, get_rank())
+    logger.info("--------------------------------------------------")
     logger.info("Using {} GPUs".format(num_gpus))
     logger.info(cfg)
 
     logger.info("Collecting env info (might take some time)")
     logger.info("\n" + collect_env_info())
 
-    if cfg.MODEL.META_ARCHITECTURE == "SceneParser":
+    if cfg.MODEL.META_ARCHITECTURE == "SceneParser":  # False
         model = SceneParser(cfg)
-    elif cfg.MODEL.META_ARCHITECTURE == "AttrRCNN":
+    elif cfg.MODEL.META_ARCHITECTURE == "AttrRCNN":  # True
         model = AttrRCNN(cfg)
     model.to(cfg.MODEL.DEVICE)
 

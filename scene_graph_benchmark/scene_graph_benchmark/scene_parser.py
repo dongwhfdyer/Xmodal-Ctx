@@ -60,7 +60,7 @@ class SceneParser(GeneralizedRCNN):
             self.rel_backbone = build_backbone(cfg)
             feature_dim = self.rel_backbone.out_channels
 
-        # TODO: add force_relations logic
+        # There are two heads. Kuhn edited
         self.force_relations = cfg.MODEL.ROI_RELATION_HEAD.FORCE_RELATIONS
         if cfg.MODEL.RELATION_ON and self.cfg.MODEL.ROI_RELATION_HEAD.ALGORITHM in SCENE_PAESER_DICT:
             self.relation_head = build_roi_relation_head(cfg, feature_dim)
@@ -68,7 +68,7 @@ class SceneParser(GeneralizedRCNN):
         if cfg.MODEL.ATTRIBUTE_ON:
             self.attribute_head = build_roi_attribute_head(cfg, feature_dim)
 
-        # self._freeze_components(self.cfg)
+        # freeze backbone, rpn, roi_heads
         for p in self.backbone.parameters():
             p.requires_grad = False
         for p in self.rpn.parameters():
@@ -77,6 +77,7 @@ class SceneParser(GeneralizedRCNN):
             p.requires_grad = False
 
         if not self.cfg.MODEL.ROI_RELATION_HEAD.SHARE_BOX_FEATURE_EXTRACTOR:
+            # two box feature extractors or one feature extractor
             if self.cfg.MODEL.ROI_RELATION_HEAD.SEPERATE_SO_FEATURE_EXTRACTOR:
                 self.subj_feature_extractor = make_roi_relation_box_feature_extractor(cfg, feature_dim)
                 self.obj_feature_extractor = make_roi_relation_box_feature_extractor(cfg, feature_dim)
@@ -191,13 +192,13 @@ class SceneParser(GeneralizedRCNN):
         if self.force_relations and targets is None:
             # note targets cannot be None but could have 0 box.
             raise ValueError("In force_relations setting, targets should be passed")
-        # set the object detector to evaluation mode and run the object detection model
+        # set the object detector to evaluation mode which means freezing the batchnorm, dropout etc.
         self.backbone.eval()
         self.rpn.eval()
         self.roi_heads.eval()
 
         images = to_image_list(images)
-        if targets:
+        if targets: # if it is testing mode, targets is None.
             if self.detector_pre_calculated:
                 predictions = [prediction.to(self.device) for (target, prediction) in targets if prediction is not None]
                 targets = [target.to(self.device) for (target, prediction) in targets if target is not None]

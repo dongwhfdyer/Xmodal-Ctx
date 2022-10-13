@@ -478,6 +478,3 @@ if __name__ == '__main__':
         ctx_file="../datasets/vis_ctx.hdf5",
         preload=False,
     )
-
-
-

@@ -88,4 +88,4 @@ def build_backbone(cfg):
         "cfg.MODEL.BACKBONE.CONV_BODY: {} are not registered in registry".format(
             cfg.MODEL.BACKBONE.CONV_BODY
         )
-    return registry.BACKBONES[cfg.MODEL.BACKBONE.CONV_BODY](cfg)
+    return registry.BACKBONES[cfg.MODEL.BACKBONE.CONV_BODY](cfg) # default: R-152-C4

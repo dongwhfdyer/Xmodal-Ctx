@@ -34,7 +34,7 @@ def to_image_list(tensors, size_divisible=0):
     the Tensors with zeros so that they have the same
     shape
     """
-    if isinstance(tensors, torch.Tensor) and size_divisible > 0:
+    if isinstance(tensors, torch.Tensor) and size_divisible > 0:  # if it's a tensor, leave it.
         tensors = [tensors]
 
     if isinstance(tensors, ImageList):
@@ -42,7 +42,7 @@ def to_image_list(tensors, size_divisible=0):
     elif isinstance(tensors, torch.Tensor):
         # single tensor shape can be inferred
         if tensors.dim() == 3:
-            tensors = tensors[None]
+            tensors = tensors[None] # add one dimension
         assert tensors.dim() == 4
         image_sizes = [tensor.shape[-2:] for tensor in tensors]
         return ImageList(tensors, image_sizes)

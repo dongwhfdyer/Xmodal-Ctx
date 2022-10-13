@@ -21,6 +21,6 @@ registry.ROI_ATTRIBUTE_FEATURE_EXTRACTORS.register(
 
 def make_roi_attribute_feature_extractor(cfg, in_channels):
     func = registry.ROI_ATTRIBUTE_FEATURE_EXTRACTORS[
-        cfg.MODEL.ROI_ATTRIBUTE_HEAD.FEATURE_EXTRACTOR
+        cfg.MODEL.ROI_ATTRIBUTE_HEAD.FEATURE_EXTRACTOR # ResNet50Conv5ROIFeatureExtractor
     ]
     return func(cfg, in_channels)

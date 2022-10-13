@@ -27,9 +27,9 @@ class AttrRCNN(GeneralizedRCNN):
         super(AttrRCNN, self).__init__(cfg)
         self.cfg = cfg
         self.device = cfg.MODEL.DEVICE
-        feature_dim = self.backbone.out_channels
+        feature_dim = self.backbone.out_channels  # 1024
 
-        if cfg.MODEL.ATTRIBUTE_ON:
+        if cfg.MODEL.ATTRIBUTE_ON:  # True
             self.attribute = build_roi_attribute_head(cfg, feature_dim)
             if cfg.MODEL.ROI_ATTRIBUTE_HEAD.SHARE_BOX_FEATURE_EXTRACTOR:
                 self.attribute.feature_extractor = self.roi_heads.box.feature_extractor
@@ -63,13 +63,13 @@ class AttrRCNN(GeneralizedRCNN):
 
         images = to_image_list(images)
         images = images.to(self.device)
-        features = self.backbone(images.tensors)
+        features = self.backbone(images.tensors)  # [bs, 1024, 38, 57]
 
-        if targets:
+        if targets:  # It is not empty.
             targets = [target.to(self.device)
                        for target in targets if target is not None]
 
-        if self.force_boxes:
+        if self.force_boxes:  # False
             proposals = [BoxList(target.bbox, target.size, target.mode)
                          for target in targets]
             if self.training:
@@ -81,12 +81,11 @@ class AttrRCNN(GeneralizedRCNN):
                     null_loss += 0.0 * param.sum()
                 proposal_losses = {'rpn_null_loss', null_loss}
         else:
+            # proposals: Batchsize BoxList objects. Each one has 200-300 boxes coordinates.
             proposals, proposal_losses = self.rpn(images, features, targets)
-
-        x, predictions, detector_losses = self.roi_heads(features,
-                                                         proposals, targets)
-
-        if self.cfg.MODEL.ATTRIBUTE_ON:
+        # x: [494, 2048, 7, 7] predictions: batchsize BoxList objects. Each one has 0-100 boxes coordinates.
+        x, predictions, detector_losses = self.roi_heads(features, proposals, targets)
+        if self.cfg.MODEL.ATTRIBUTE_ON:  # True
             attribute_features = features
             # the attribute head reuse the features from the box head
             if (
@@ -96,7 +95,7 @@ class AttrRCNN(GeneralizedRCNN):
                 attribute_features = x
             # During training, self.box() will return the unaltered proposals as "detections"
             # this makes the API consistent during training and testing
-            x_attr, predictions, loss_attribute = self.attribute(
+            x_attr, predictions, loss_attribute = self.attribute(  # x_attr: [55, 2048, 7, 7] predictions: batchsize BoxList objects. Each one has 0-100 boxes coordinates.
                 attribute_features, predictions, targets
             )
             detector_losses.update(loss_attribute)

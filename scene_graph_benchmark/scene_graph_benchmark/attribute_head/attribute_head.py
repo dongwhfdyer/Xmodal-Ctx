@@ -11,7 +11,7 @@ from .loss import make_roi_attribute_loss_evaluator
 
 
 class ROIAttributeHead(torch.nn.Module):
-    def __init__(self, cfg, in_channels):
+    def __init__(self, cfg, in_channels): # in_channels = 1024
         super(ROIAttributeHead, self).__init__()
         self.cfg = cfg.clone()
         self.feature_extractor = make_roi_attribute_feature_extractor(cfg, in_channels)
