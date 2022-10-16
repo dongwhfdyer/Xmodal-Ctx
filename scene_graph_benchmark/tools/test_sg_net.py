@@ -2,7 +2,7 @@
 # Copyright (c) 2021 Microsoft Corporation. Licensed under the MIT license.
 # Set up custom environment before nearly anything else is imported
 # NOTE: this should be the first import (no not reorder)
-
+# test git uploading
 import sys
 
 sys.path.append("/home/pcl/kuhn/Xmodal-Ctx/scene_graph_benchmark")
