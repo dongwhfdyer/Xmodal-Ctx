@@ -47,7 +47,7 @@ class Transformer(CaptioningModel):
         return bs.apply(obj, vis_ctx, txt_ctx, out_size, return_probs)
 
     def forward(self, mode, **kwargs):
-        if mode == "xe":
+        if mode == "xe": # true
             return self.forward_xe(**kwargs)
         elif mode == "rl":
             return self.forward_rl(**kwargs)

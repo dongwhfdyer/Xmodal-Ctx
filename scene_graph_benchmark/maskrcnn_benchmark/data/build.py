@@ -27,8 +27,8 @@ def build_dataset(cfg, transforms, dataset_catalog, is_train=True):
         is_train (bool): whether to setup the dataset for training or testing
     """
 
-    dataset_list = cfg.DATASETS.TRAIN if is_train else cfg.DATASETS.TEST
-    factory_list = cfg.DATASETS.FACTORY_TRAIN if is_train else cfg.DATASETS.FACTORY_TEST
+    dataset_list = cfg.DATASETS.TRAIN if is_train else cfg.DATASETS.TEST # coco_2014_val
+    factory_list = cfg.DATASETS.FACTORY_TRAIN if is_train else cfg.DATASETS.FACTORY_TEST # VGTSVDataset
     if not isinstance(dataset_list, (list, tuple)):
         raise RuntimeError(
             "dataset_list should be a list of strings, got {}".format(dataset_list))

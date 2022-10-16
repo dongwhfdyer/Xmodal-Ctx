@@ -90,8 +90,8 @@ class DictionaryDataset(Dataset):
         for field in aux_fields:
             assert (field in fields) and (field not in key_fields)
 
-        key_fields = {k: fields[k] for k in key_fields}
-        aux_fields = {k: fields[k] for k in aux_fields}
+        key_fields = {k: fields[k] for k in key_fields}  # default: object
+        aux_fields = {k: fields[k] for k in aux_fields}  # default: ["img_id", "txt_ctx", "vis_ctx"]
         value_fields = {k: fields[k] for k in fields.keys() if k not in key_fields and k not in aux_fields}
 
         dictionary = collections.defaultdict(list)
@@ -105,12 +105,12 @@ class DictionaryDataset(Dataset):
             aux_example = Example.fromdict({k: getattr(e, k) for k in aux_fields})
             value_example = Example.fromdict({k: getattr(e, k) for k in value_fields})
             if key_example not in key_dict:
-                key_dict[key_example] = len(key_examples)
-                key_examples.append(key_example)
-                aux_examples.append(aux_example)
+                key_dict[key_example] = len(key_examples)  # key_dict: distinct key_example {key_example: index}
+                key_examples.append(key_example) # key_examples: distinct key_example
+                aux_examples.append(aux_example) # aux_examples: distinct aux_example
 
-            value_examples.append(value_example)
-            dictionary[key_dict[key_example]].append(i)
+            value_examples.append(value_example) # target caption
+            dictionary[key_dict[key_example]].append(i) # it counts how many times the key_example appears
 
         self.key_dataset = Dataset(key_examples, key_fields)
         self.aux_dataset = Dataset(aux_examples, aux_fields)

@@ -71,6 +71,7 @@ class COCODataset(torchvision.datasets.coco.CocoDetection):
         # TODO might be better to add an extra field
         anno = [obj for obj in anno if obj["iscrowd"] == 0]
 
+        image_id = self.ids[idx]
         boxes = [obj["bbox"] for obj in anno]
         boxes = torch.as_tensor(boxes).reshape(-1, 4)  # guard against no boxes
         target = BoxList(boxes, img.size, mode="xywh").convert("xyxy")
@@ -95,7 +96,8 @@ class COCODataset(torchvision.datasets.coco.CocoDetection):
         if self._transforms is not None:
             img, target = self._transforms(img, target)
 
-        return img, target, idx
+        return img, target, image_id # kuhn edited
+        # return img, target, idx
 
     def get_img_info(self, index):
         img_id = self.id_to_img_map[index]

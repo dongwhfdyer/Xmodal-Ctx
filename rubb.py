@@ -95,4 +95,35 @@ def rubb1():
     print(ddd)
 
 
+def testhdf5saving():
+    import h5py
+    objPath = r"temp/rubb.hdf5"
 
+    def saveByBatch(featureDict):
+        obj = h5py.File(objPath, 'a')
+        for img_id, feature in featureDict.items():
+            img_id = str(img_id)
+            obj.create_group(img_id)
+            obj[img_id]['num_boxes'] = len(feature.get_field('box_features'))
+            obj[img_id]['obj_features'] = feature.get_field('box_features').numpy()
+        obj.close()
+
+
+    obj = h5py.File(objPath, 'a')
+    obj.create_group('1')
+    obj['1']['num_boxes'] = 1
+    obj['1']['obj_features'] = torch.Tensor([1, 2, 3, 4]).numpy()
+    obj.close()
+
+    obj = h5py.File(objPath, 'a')
+    obj.create_group('2')
+    obj['2']['num_boxes'] = 2
+    obj['2']['obj_features'] = torch.Tensor([1, 2, 3, 4, 5, 6]).numpy()
+    obj.close()
+
+    obj = h5py.File(objPath, 'r')
+    print(obj.keys())
+    obj.close()
+
+if __name__ == '__main__':
+    testhdf5saving()

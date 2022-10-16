@@ -14,6 +14,8 @@ def readHDF5File(hdf5File):
 
 def readOneFromHDF5(objPath, ind):
     obj = h5py.File(objPath, 'r')
+    print(obj.keys())
+    len(obj.keys())
     objId = list(obj.keys())
     oneExp = obj[objId[ind]]
     oneExpValues = list(oneExp.values())
@@ -30,12 +32,27 @@ def writeToHDF5(objPath, numBoxes, objFeatures):
     obj['0']['obj_features'] = objFeatures
     obj.close()
 
+
 def testReadData():
-    objFilePath = r"datasets/oscar.hdf5"
-    numBoxes, objFeatures = readOneFromHDF5(objFilePath, 0)
-    obj_filePath3 = r"temp/rubb.hdf5"
-    writeToHDF5(obj_filePath3, numBoxes, objFeatures)
-    numBoxes1, objFeatures1 = readOneFromHDF5(obj_filePath3, 0)
+    # objFilePath = r"/home/pcl/kuhn/Xmodal-Ctx/scene_graph_benchmark/temp/rubb.hdf5"
+    # objFilePath = r"temp/rubb.hdf5"
+    oscarObjFilePath = r"datasets/oscar.hdf5"
+    vinvlObjFilePath = r"datasets/vinvl.hdf5"
+    oscarObj = h5py.File(oscarObjFilePath, 'r')
+    vinvlObj = h5py.File(vinvlObjFilePath, 'r') # 123287 images
+    import numpy
+    ss = numpy.array(vinvlObj['42/obj_features'])
+    sss = numpy.array(oscarObj['42/obj_features'])
+
+    print(len(oscarObj.keys()))
+    print(len(vinvlObj.keys()))
+
+    oscarObj.close()
+    vinvlObj.close()
+    # numBoxes, objFeatures = readOneFromHDF5(objFilePath, 0)
+    # obj_filePath3 = r"temp/rubb.hdf5"
+    # writeToHDF5(obj_filePath3, numBoxes, objFeatures)
+    # numBoxes1, objFeatures1 = readOneFromHDF5(obj_filePath3, 0)
 
     print("--------------------------------------------------")
 

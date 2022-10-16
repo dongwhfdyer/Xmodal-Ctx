@@ -328,8 +328,8 @@ class ImageDetectionsField(RawField):
             obj = self.obj[f"{image_id}/obj_features"][:]
         n, d = obj.shape
 
-        delta = self.max_detections - n
-        if delta > 0:
+        delta = self.max_detections - n # if there are too many bounding boxes, we will remove the rest of them.
+        if delta > 0: # pad with zeros
             p = np.zeros((delta, d), dtype=obj.dtype)
             obj = np.concatenate([obj, p], axis=0)
         elif delta < 0:

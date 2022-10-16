@@ -182,14 +182,20 @@ def main():
     logger.info("Using {} GPUs".format(num_gpus))
     logger.info(cfg)
 
-    logger.info("Collecting env info (might take some time)")
-    logger.info("\n" + collect_env_info())
+    # logger.info("Collecting env info (might take some time)")
+    # logger.info("\n" + collect_env_info())
 
     if cfg.MODEL.META_ARCHITECTURE == "SceneParser":  # False
         model = SceneParser(cfg)
     elif cfg.MODEL.META_ARCHITECTURE == "AttrRCNN":  # True
         model = AttrRCNN(cfg)
-    model.to(cfg.MODEL.DEVICE)
+    device_ids = [int(item) for item in cfg.MODEL.DEVICE.split(",")]
+    # model = torch.nn.DataParallel(model, device_ids=device_ids)
+    device = torch.device("cuda")
+    model.to(device)
+    # model = torch.nn.parallel.DistributedDataParallel(
+    #     model, device_ids=[args.local_rank], output_device=args.local_rank
+    # )
 
     output_dir = cfg.OUTPUT_DIR
     checkpointer = DetectronCheckpointer(cfg, model, save_dir=output_dir)

@@ -26,7 +26,7 @@ class AttrRCNN(GeneralizedRCNN):
         # GeneralizedRCNN.__init__(self, cfg)
         super(AttrRCNN, self).__init__(cfg)
         self.cfg = cfg
-        self.device = cfg.MODEL.DEVICE
+        self.device = torch.device("cuda")
         feature_dim = self.backbone.out_channels  # 1024
 
         if cfg.MODEL.ATTRIBUTE_ON:  # True

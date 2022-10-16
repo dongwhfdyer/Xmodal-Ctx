@@ -42,7 +42,7 @@ def to_image_list(tensors, size_divisible=0):
     elif isinstance(tensors, torch.Tensor):
         # single tensor shape can be inferred
         if tensors.dim() == 3:
-            tensors = tensors[None] # add one dimension
+            tensors = tensors[None]  # add one dimension
         assert tensors.dim() == 4
         image_sizes = [tensor.shape[-2:] for tensor in tensors]
         return ImageList(tensors, image_sizes)
