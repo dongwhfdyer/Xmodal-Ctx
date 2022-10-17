@@ -26,7 +26,7 @@ if __name__ == "__main__":
     n = P_hat.shape[0]  # number of permutations
 
     for i in trange(args.classes):  # choose the best args.classes permutation for each class
-        nonlocal P
+        # nonlocal P
         if i == 0:
             j = np.random.randint(n)
             P = np.array(P_hat[j]).reshape([1, -1])  # randomly select one permutation
@@ -34,7 +34,8 @@ if __name__ == "__main__":
             P = np.concatenate([P, P_hat[j].reshape([1, -1])], axis=0)
 
         P_hat = np.delete(P_hat, j, axis=0)  # remove the selected permutation from the list
-        D = cdist(P, P_hat, metric='hamming').mean(axis=0).flatten()  # compute the average hamming distance between the selected permutation and the remaining ones
+        D = cdist(P, P_hat, metric='hamming').mean(
+            axis=0).flatten()  # compute the average hamming distance between the selected permutation and the remaining ones
 
         if args.selection == 'max':  # select the permutation with the highest average hamming distance
             j = D.argmax()

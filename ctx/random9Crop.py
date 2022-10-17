@@ -35,6 +35,7 @@ def crop9(imgPath, permutation):
         img = Image.fromarray(np.uint8(img))
     except Exception as e:
         print(e)
+        print(imgPath)
         # show the original image
         img = Image.open(imgPath)
         img.save(imgErrorFolder / imgPath.name)
@@ -126,8 +127,8 @@ if __name__ == '__main__':
     imgValDestFolder = Path("datasets/coco_captions/val2014Random9Crop")
     imgErrorFolder = Path("datasets/coco_captions/error")
     imgResumedFolder = Path("datasets/coco_captions/resumed")
-    annotationTrainFile = "datasets/coco_captions/annotations/trainRandom9Info.json"
-    annotationValFile = "datasets/coco_captions/annotations/valRandom9Info.json"
+    annotationTrainFile = "datasets/coco_captions/trainRandom9Info.txt"
+    annotationValFile = "datasets/coco_captions/valRandom9Info.txt"
 
     delete_folders(imgTrainDestFolder, imgValDestFolder, imgErrorFolder, imgResumedFolder)
     create_folders(imgTrainDestFolder, imgValDestFolder, imgErrorFolder, imgResumedFolder)

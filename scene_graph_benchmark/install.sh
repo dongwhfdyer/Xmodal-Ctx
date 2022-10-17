@@ -1,9 +1,8 @@
-# first, make sure that your conda is setup properly with the right environment
-# for that, check that `which conda`, `which pip` and `which python` points to the
-# right path. From a clean conda env, this is what you need to do
-
-conda create --name sg_benchmark python=3.7 -y
-conda activate sg_benchmark
+#!/bin/bash
+set -e
+set -u
+#conda create --name sg_benchmark python=3.7
+#conda activate sg_benchmark
 
 # this installs the right pip and dependencies for the fresh python
 conda install ipython h5py nltk joblib jupyter pandas scipy
