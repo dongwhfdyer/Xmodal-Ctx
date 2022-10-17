@@ -15,4 +15,3 @@ fi
 ln -s ~/datasets/coco/train2014 datasets/coco_captions/train2014
 ln -s ~/datasets/coco/val2014 datasets/coco_captions/val2014
 ln -s ~/datasets/coco/annotations datasets/coco_captions/annotations
-

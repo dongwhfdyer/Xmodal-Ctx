@@ -1,6 +1,6 @@
-# first, make sure that your conda is setup properly with the right environment
-# for that, check that `which conda`, `which pip` and `which python` points to the
-# right path. From a clean conda env, this is what you need to do
+#!/bin/bash
+set -e
+set -u
 
 
 conda create --name sg_benchmark python=3.7 -y
