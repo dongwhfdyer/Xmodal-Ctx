@@ -1,4 +1,5 @@
 from pathlib import Path
+import numpy
 import h5py
 import numpy as np
 
@@ -38,16 +39,23 @@ def testReadData():
     # objFilePath = r"temp/rubb.hdf5"
     oscarObjFilePath = r"datasets/oscar.hdf5"
     vinvlObjFilePath = r"datasets/vinvl.hdf5"
-    oscarObj = h5py.File(oscarObjFilePath, 'r')
-    vinvlObj = h5py.File(vinvlObjFilePath, 'r') # 123287 images
-    import numpy
-    ss = numpy.array(vinvlObj['42/obj_features'])
-    sss = numpy.array(oscarObj['42/obj_features'])
+    puzzlecocoFilePath = r"datasets/puzzleCOCOFeature.hdf5"
+    # oscarObj = h5py.File(oscarObjFilePath, 'r')
+    puzzleObj = h5py.File(puzzlecocoFilePath, 'r')
+    vinvlObj = h5py.File(vinvlObjFilePath, 'r')  # 123287 images
+    # ss = numpy.array(vinvlObj['42/obj_features'])
+    # sss = numpy.array(oscarObj['42/obj_features'])
 
-    print(len(oscarObj.keys()))
-    print(len(vinvlObj.keys()))
+    # print(oscarObj.keys())
+    # print(vinvlObj.keys())
+    # print(puzzleObj.keys())
+    with open("temp/puzzleObj.txt", 'w') as f:
+        f.write(str(puzzleObj.keys()))
+    with open("temp/vinvlObj.txt", 'w') as f:
+        f.write(str(vinvlObj.keys()))
 
-    oscarObj.close()
+    puzzleObj.close()
+    # oscarObj.close()
     vinvlObj.close()
     # numBoxes, objFeatures = readOneFromHDF5(objFilePath, 0)
     # obj_filePath3 = r"temp/rubb.hdf5"

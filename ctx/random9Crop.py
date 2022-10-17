@@ -35,6 +35,7 @@ def crop9(imgPath, permutation):
         img = Image.fromarray(np.uint8(img))
     except Exception as e:
         print(e)
+        print(imgPath)
         # show the original image
         img = Image.open(imgPath)
         img.save(imgErrorFolder / imgPath.name)
