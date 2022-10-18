@@ -21,4 +21,4 @@ parser.add_argument('--preload', action='store_true')
 parser.add_argument('--resume_last', action='store_true')
 parser.add_argument('--resume_best', action='store_true')
 args = parser.parse_args()
-
+args.devices = [f"cuda:{i}" for i in args.devices]

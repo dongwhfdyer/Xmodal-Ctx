@@ -4,6 +4,9 @@ import sys
 import numpy as np
 import itertools
 import collections
+
+import torch
+
 from data.example import Example
 from data.utils import nostdout
 # from .example import Example
@@ -63,7 +66,13 @@ class ValueDataset(Dataset):
             # lengths[1:]
             # # ---------kkuhn-block------------------------------
             for k, v in value_tensors_flattened.items():
-                value_tensors[k] = [v[s:e] for (s, e) in zip(lengths[:-1], lengths[1:])]
+                # #---------kkuhn-block------------------------------
+                # dd =[v[s:e] for (s, e) in zip(lengths[:-1], lengths[1:])]  # kuhn delete
+                #
+                # default_collate = torch.utils.data.dataloader.default_collate
+                # ss = default_collate([v[s:e] for (s, e) in zip(lengths[:-1], lengths[1:])])
+                # #---------kkuhn-block------------------------------
+                value_tensors[k] = torch.Tensor([v[s:e] for (s, e) in zip(lengths[:-1], lengths[1:])][0])
 
             return value_tensors
 
@@ -241,23 +250,25 @@ class COCO(PairedDataset):
             examples.append(example)
         return examples
 
-    def __getitem__(self, index=None):
-        ann_id = self.ids[index]  # e.g. 787980
-        caption = self.coco.anns[ann_id]['caption']  # e.g. A restroom sign with a picture of a toilet and a sink.
-        img_id = self.coco.anns[ann_id]['image_id']  # e.g.57870
-
-        example = {
-            "img_id": img_id,
-            "object": img_id,
-            "text": caption,
-            "txt_ctx": img_id,
-            "vis_ctx": img_id
-        }
-        example = Example.fromdict(example)
-        data = {}
-        for field_name, field in self.fields.items():
-            data[field_name] = field.preprocess(getattr(example, field_name))
-        return data
+    # #---------kkuhn-block------------------------------ # kuhn: useless
+    # def __getitem__(self, index=None):
+    #     ann_id = self.ids[index]  # e.g. 787980
+    #     caption = self.coco.anns[ann_id]['caption']  # e.g. A restroom sign with a picture of a toilet and a sink.
+    #     img_id = self.coco.anns[ann_id]['image_id']  # e.g.57870
+    #
+    #     example = {
+    #         "img_id": img_id,
+    #         "object": img_id,
+    #         "text": caption,
+    #         "txt_ctx": img_id,
+    #         "vis_ctx": img_id
+    #     }
+    #     example = Example.fromdict(example)
+    #     data = {}
+    #     for field_name, field in self.fields.items():
+    #         data[field_name] = field.preprocess(getattr(example, field_name))
+    #     return data
+    # #---------kkuhn-block------------------------------
 
 
 class PuzzlePairedDataset(Dataset):

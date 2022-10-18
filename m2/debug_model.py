@@ -1,9 +1,11 @@
 # Create the dataset
+import torch
 import os
 import pickle
 import shutil
 from pathlib import Path
 
+import torch
 from torch.nn import NLLLoss
 
 from data import ImageDetectionsField, TextField, TxtCtxField, VisCtxField, RawField, COCO
@@ -30,7 +32,7 @@ def buildModel():
     decoder = MeshedDecoder(len(text_field.vocab), 54, 3, text_field.vocab.stoi['<pad>'])
     projector = Projector(
         f_obj=2054, f_vis=vis_ctx_field.fdim, f_txt=516,  # kuhn edited
-        f_out=encoder.d_model, drop_rate=args.drop_rate
+        f_out=encoder.d_model, drop_rate=args.drop_rate, device=cudaDevice
     )
 
     model = Transformer(
@@ -40,7 +42,7 @@ def buildModel():
     return model
 
 
-cudaDevice = "cuda:1"
+cudaDevice = "cuda:0"
 
 
 def genOneItem(dataloader):
@@ -80,17 +82,32 @@ if __name__ == '__main__':
 
     dset = args.dataset_root / "annotations"
     cocodataset = COCO(fields, dset, dset)
-    dataset = cocodataset.image_dictionary()
+    # dataset = cocodataset.image_dictionary()
+    # #---------kkuhn-block------------------------------ # kuhn: delete
+    # vocab_file2 = 'vocab/vocab_coco2.pkl'
+    # text_field.build_vocab(cocodataset, min_freq=5)
+    # #---------kkuhn-block------------------------------
 
-    dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, num_workers=0, drop_last=True)
+    dataloader = DataLoader(cocodataset, batch_size=args.batch_size, shuffle=True, num_workers=0, drop_last=True)
 
     loss_fn = NLLLoss(ignore_index=text_field.vocab.stoi['<pad>']).to(cudaDevice)
 
     model = buildModel()
-    obj, vis_ctx, txt_ctx, captions = genOneItem(dataloader)
-    out = model(obj=obj, vis_ctx=vis_ctx, txt_ctx=txt_ctx, seq=captions, mode="xe")
-    out = out[:, :-1].contiguous()
-    captions_gt = captions[:, 1:].contiguous()
-    loss = loss_fn(out.view(-1, len(text_field.vocab)), captions_gt.view(-1))
+    # #---------kkuhn-block------------------------------ # kuhn: for testing
+    # aa = text_field.
+    # #---------kkuhn-block------------------------------
+    while 1:
+        obj, vis_ctx, txt_ctx, captions = genOneItem(dataloader)
+        out = model(obj=obj, vis_ctx=vis_ctx, txt_ctx=txt_ctx, seq=captions, mode="xe")
+        # # ---------kkuhn-block------------------------------ # kuhn for testing
+        # dd = text_field.decode(captions[0])
+        # ss = torch.topk(out, 1)
+        # sss = torch.topk(out, 1)[1].squeeze(2)
+        # ddd = text_field.decode(sss[0])
+        # # ---------kkuhn-block------------------------------
+        out = out[:, :-1].contiguous()
+        captions_gt = captions[:, 1:].contiguous()
+        loss = loss_fn(out.view(-1, len(text_field.vocab)), captions_gt.view(-1))
+        pass
 
     pass

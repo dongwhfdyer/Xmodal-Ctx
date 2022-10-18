@@ -4,9 +4,9 @@ from m2.models.transformer.utils import sinusoid_encoding_table
 
 
 class Projector(nn.Module):
-    def __init__(self, f_obj, f_vis, f_txt, f_out, drop_rate=0.3):
+    def __init__(self, f_obj, f_vis, f_txt, f_out, drop_rate=0.3, device="cuda:0"):
         super().__init__()
-
+        self.device = device
         # for objects O
         self.obj_mlp1 = nn.Sequential(
             nn.LayerNorm(f_obj), nn.Linear(f_obj, f_out), nn.Dropout(p=drop_rate)
@@ -76,10 +76,10 @@ class Projector(nn.Module):
             pos_k = txt_ctx[k]["pos"]
             embed_k = txt_ctx[k]["embed"]
             # ---------kkuhn-block------------------------------ pos encoding
-            posEnc = posEncoding[k].cuda()
+            posEnc = posEncoding[k].to(self.device)  # TODO: add device
             bt = pos_k.shape[0]
             posEnc_ = posEnc.unsqueeze(0).repeat(bt, 1, 12).reshape(bt, -1, 4)
-            embed_k_ = torch.concat([embed_k, posEnc_], -1)  # todo
+            embed_k_ = torch.concat([embed_k, posEnc_], -1)
             # ---------kkuhn-block------------------------------
 
             mlp1 = getattr(self, f"txt_mlp1_{k}")

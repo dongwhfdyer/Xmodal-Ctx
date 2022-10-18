@@ -90,7 +90,6 @@ def rubb1():
                        [67.2, 156.8, 134.4, 134.4],
                        [156.8, 156.8, 134.4, 134.4],
                        [112, 112, 134.4, 134.4],))
-
     print(dd)
     ddd = dd / 224
     print(ddd)
@@ -124,10 +123,6 @@ def testhdf5saving():
     obj = h5py.File(objPath, 'r')
     print(obj.keys())
     obj.close()
-
-
-
-
 
 
 if __name__ == '__main__':
