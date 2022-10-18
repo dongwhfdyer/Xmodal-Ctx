@@ -186,11 +186,10 @@ class TextField(RawField):
         returns the padded list.
         """
         minibatch = list(minibatch)
-        if self.fix_length is None:
+        if self.fix_length is None:  # True
             max_len = max(len(x) for x in minibatch)
         else:
-            max_len = self.fix_length + (
-                self.init_token, self.eos_token).count(None) - 2
+            max_len = self.fix_length + (self.init_token, self.eos_token).count(None) - 2
         padded, lengths = [], []
         for x in minibatch:
             if self.pad_first:
@@ -292,10 +291,30 @@ class TextField(RawField):
         return captions
 
 
+class puzzleIdField(RawField):
+    def __init__(self, puzzleFile=None, preprocessing=None, postprocessing=None, ):
+        pfile = open(puzzleFile, 'r')
+        self.puzzleIdDict = {}
+        for line in pfile:
+            line = line.strip().split(' ')
+            imgId = int(line[0].split('_')[-1])
+            self.puzzleIdDict[imgId] = int(line[1])
+        super(puzzleIdField, self).__init__(preprocessing, postprocessing)
+
+    def preprocess(self, image_id):
+        puzzleid = self.puzzleIdDict[image_id]
+        return puzzleid
+
+    # def process(self, batch, *args, **kwargs):
+    #     batch = torch.stack(batch)
+    #     max_len = torch.max(torch.sum(torch.sum(batch, dim=-1) != 0, dim=-1))
+    #
+    #     return batch[:, :max_len]
+
+
 class ImageDetectionsField(RawField):
     def __init__(self, obj_file=None, max_detections=50, preload=False, preprocessing=None, postprocessing=None):
-        self.max_detections = max_detections
-
+        self.max_detections = max_detections  # if the bounding boxes number exceeds this number, it will truncate to 50.
         self.preload = preload
         if preload:
             self.obj = self.load(obj_file)
@@ -328,8 +347,8 @@ class ImageDetectionsField(RawField):
             obj = self.obj[f"{image_id}/obj_features"][:]
         n, d = obj.shape
 
-        delta = self.max_detections - n # if there are too many bounding boxes, we will remove the rest of them.
-        if delta > 0: # pad with zeros
+        delta = self.max_detections - n  # if there are too many bounding boxes, we will remove the rest of them.
+        if delta > 0:  # pad with zeros
             p = np.zeros((delta, d), dtype=obj.dtype)
             obj = np.concatenate([obj, p], axis=0)
         elif delta < 0:

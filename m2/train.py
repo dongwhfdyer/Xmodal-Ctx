@@ -3,6 +3,7 @@ import dill
 import sys
 import os
 import time
+from original_args import args
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from data import (
@@ -123,8 +124,6 @@ def train_xe(model, dataloader, optim, text_field):
                 }
                 for k1, v1 in data["txt_ctx"].items()
             }
-            ss = txt_ctx['five']['pos']
-            sss = txt_ctx['nine']['pos']
             vis_ctx = data["vis_ctx"].to(device, non_blocking=True)
             obj = data["object"].to(device, non_blocking=True)
             captions = data["text"].to(device, non_blocking=True)
@@ -213,25 +212,25 @@ def train_scst(model, dataloader, optim, cider, text_field):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Meshed-Memory Transformer')
-    parser.add_argument('--exp_name', type=str, default='[m2][xmodal-ctx]')
-    parser.add_argument('--batch_size', type=int, default=50)
-    parser.add_argument('--bs_reduct', type=int, default=5)
-    parser.add_argument('--workers', type=int, default=6)
-    parser.add_argument('--m', type=int, default=40)
-    parser.add_argument('--topk', type=int, default=12)
-    parser.add_argument('--warmup', type=int, default=10000)
-    parser.add_argument('--lr_xe', type=float, default=1e-4)
-    parser.add_argument('--lr_rl', type=float, default=5e-6)
-    parser.add_argument('--wd_rl', type=float, default=0.05)
-    parser.add_argument('--drop_rate', type=float, default=0.3)
-    parser.add_argument('--devices', nargs='+', type=int, default=[0, 1])
-    parser.add_argument('--dataset_root', type=str, default="./datasets")
-    parser.add_argument('--obj_file', type=str, default="oscar.hdf5")
-    parser.add_argument('--preload', action='store_true')
-    parser.add_argument('--resume_last', action='store_true')
-    parser.add_argument('--resume_best', action='store_true')
-    args = parser.parse_args()
+    # parser = argparse.ArgumentParser(description='Meshed-Memory Transformer')
+    # parser.add_argument('--exp_name', type=str, default='[m2][xmodal-ctx]')
+    # parser.add_argument('--batch_size', type=int, default=50)
+    # parser.add_argument('--bs_reduct', type=int, default=5)
+    # parser.add_argument('--workers', type=int, default=6)
+    # parser.add_argument('--m', type=int, default=40)
+    # parser.add_argument('--topk', type=int, default=12)
+    # parser.add_argument('--warmup', type=int, default=10000)
+    # parser.add_argument('--lr_xe', type=float, default=1e-4)
+    # parser.add_argument('--lr_rl', type=float, default=5e-6)
+    # parser.add_argument('--wd_rl', type=float, default=0.05)
+    # parser.add_argument('--drop_rate', type=float, default=0.3)
+    # parser.add_argument('--devices', nargs='+', type=int, default=[0, 1])
+    # parser.add_argument('--dataset_root', type=str, default="./datasets")
+    # parser.add_argument('--obj_file', type=str, default="oscar.hdf5")
+    # parser.add_argument('--preload', action='store_true')
+    # parser.add_argument('--resume_last', action='store_true')
+    # parser.add_argument('--resume_best', action='store_true')
+    # args = parser.parse_args()
 
     args.dataset_root = Path(args.dataset_root)
     setattr(args, "save_dir", Path("outputs") / args.exp_name)
@@ -242,7 +241,7 @@ if __name__ == '__main__':
     print(args)
     print('Meshed-Memory Transformer Training')
     checkTime1 = time.time()
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:0")
     writer = SummaryWriter(log_dir=args.save_dir / "tensorboard")
 
     # Create the dataset
@@ -266,6 +265,7 @@ if __name__ == '__main__':
         "object": object_field, "text": text_field, "img_id": RawField(),
         "txt_ctx": txt_ctx_filed, "vis_ctx": vis_ctx_filed
     }
+
     dset = args.dataset_root / "annotations"
     dataset = COCO(fields, dset, dset)
     train_dataset, val_dataset, test_dataset = dataset.splits
@@ -283,9 +283,6 @@ if __name__ == '__main__':
     dict_dataset_test = test_dataset.image_dictionary(fields)
     checkTime5 = time.time()
 
-    # # ---------kkuhn-block------------------------------ only for test
-    # dd = dict_dataset_test.__getitem__(0)
-    # # ---------kkuhn-block------------------------------
     ref_caps_train = list(train_dataset.text)
     cider_train = Cider(PTBTokenizer.tokenize(ref_caps_train))
 
@@ -304,6 +301,26 @@ if __name__ == '__main__':
     print('Time for building dictionary dataset: ', (checkTime5 - checkTime4) / 60, ' minutes')
     print('Time for building vocabulary: ', (checkTime6 - checkTime5) / 60, ' minutes')
     print('Time for building datasets: ', (checkTime6 - checkTime1) / 60, ' minutes')
+
+    # ---------kkuhn-block------------------------------ # kuhn: for testing
+    cudaDevice = torch.device("cuda:0")
+    dataloader = DataLoader(
+        train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers, drop_last=True
+    )
+    data = dataloader.__iter__().__next__()
+    txt_ctx = {
+        k1: {
+            k2: v2.to(cudaDevice, non_blocking=True)
+            for k2, v2 in v1.items()
+        }
+        for k1, v1 in data["txt_ctx"].items()
+    }
+    vis_ctx = data["vis_ctx"].to(cudaDevice, non_blocking=True)
+    obj = data["object"].to(cudaDevice, non_blocking=True)
+    captions = data["text"].to(cudaDevice, non_blocking=True)
+    print("--------------------------------------------------")
+    # ---------kkuhn-block------------------------------
+
     # tempFolder = "temp"
     # # ---------kkuhn-block------------------------------ save to temp folder
     # with open(tempFolder + "/text_field.pkl", 'wb') as f:
@@ -347,11 +364,11 @@ if __name__ == '__main__':
     # model = BalancedDataParallel(gpu0_bsz=60, module=model, dim=0).to(device)
     model = nn.DataParallel(model, device_ids=args.devices)
 
-    # optimizer
     no_decay = [
         n for n, m in model.named_modules()
         if any(isinstance(m, nd) for nd in [nn.LayerNorm, ])
     ]
+
     grouped_parameters = [
         {'params': [p for n, p in model.named_parameters() if not \
             any(nd in n for nd in no_decay)], 'weight_decay': 0.05},
@@ -361,14 +378,12 @@ if __name__ == '__main__':
     optim = AdamW(grouped_parameters, lr=args.lr_xe, eps=1e-8)
     scheduler = get_constant_schedule_with_warmup(optim, num_warmup_steps=args.warmup)
 
-    # Initial conditions
     loss_fn = NLLLoss(ignore_index=text_field.vocab.stoi['<pad>']).to(device)
     use_rl = False
     best_cider = .0
     patience = 0
     start_epoch = 0
 
-    # resume training
     if args.resume_last or args.resume_best:
         fname = "ckpt_last.pth" if args.resume_last else "ckpt_best.pth"
         fname = args.save_dir / fname
@@ -406,8 +421,6 @@ if __name__ == '__main__':
         dict_dataloader_test = DataLoader(
             dict_dataset_test, batch_size=math.floor(args.batch_size // 5), shuffle=False, num_workers=1, drop_last=False
         )
-        # ---------kkuhn-block------------------------------ only for test
-        # ---------kkuhn-block------------------------------
 
         # training epoch
         if not use_rl:

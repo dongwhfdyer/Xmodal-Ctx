@@ -12,11 +12,7 @@ p_opt.num_workers = 10
 p_opt.model_path = "backup_models/resnet50-19c8e357.pth"
 p_opt.save_prefix = "three_cls"
 p_opt.use_cuda = True
+p_opt.puzzle_file = "annotations/trainvalRandom9Info.txt"
 # ---------kkuhn-block------------------------------
 
 p_opt.model_path = r"backup_models/resnet50-19c8e357.pth"
-
-
-class puzzleOpt:
-    def __init__(self):
-        self.data_path = "datasets/f1979/images"

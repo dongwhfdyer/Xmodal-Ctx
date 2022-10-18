@@ -1,4 +1,6 @@
+import os
 import random
+import shutil
 
 import numpy as np
 import requests
@@ -41,3 +43,14 @@ def seed_everything(seed):
     torch.backends.cudnn.deterministic = True # Close optimization
     torch.cuda.manual_seed_all(seed) # All GPU (Optional)
 
+
+def delete_folders(*folder_path):
+    for folder in folder_path:
+        if os.path.exists(folder):
+            shutil.rmtree(folder)
+
+
+def create_folders(*folders):
+    for folder in folders:
+        if not os.path.exists(folder):
+            os.makedirs(folder)

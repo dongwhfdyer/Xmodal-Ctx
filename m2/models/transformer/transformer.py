@@ -39,7 +39,6 @@ class Transformer(CaptioningModel):
         z = self.projector(obj, vis_ctx, txt_ctx)  # N x nt x d
         enc_output, enc_mask = self.encoder(z)  # out: N x nt x d; mask: N x nt
         dec_output = self.decoder(seq, enc_output, enc_mask)
-
         return dec_output
 
     def forward_rl(self, obj, vis_ctx, txt_ctx, max_len, eos_idx, beam_size, out_size=1, return_probs=False):

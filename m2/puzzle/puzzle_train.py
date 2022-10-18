@@ -1,11 +1,5 @@
-from pathlib import Path
-import numpy
 import h5py
 import numpy as np
-
-from data import TextField, TxtCtxField, RawField, COCO
-from m2.data import ImageDetectionsField, VisCtxField
-from puzzle_opt import p_opt
 
 
 def readHDF5File(hdf5File):

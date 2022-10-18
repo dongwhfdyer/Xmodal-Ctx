@@ -1,5 +1,6 @@
 import copy
 import itertools
+from pathlib import Path
 
 from PIL import Image
 from torchvision.transforms import functional as F
@@ -108,7 +109,6 @@ def testhdf5saving():
             obj[img_id]['obj_features'] = feature.get_field('box_features').numpy()
         obj.close()
 
-
     obj = h5py.File(objPath, 'a')
     obj.create_group('1')
     obj['1']['num_boxes'] = 1
@@ -124,6 +124,11 @@ def testhdf5saving():
     obj = h5py.File(objPath, 'r')
     print(obj.keys())
     obj.close()
+
+
+
+
+
 
 if __name__ == '__main__':
     testhdf5saving()

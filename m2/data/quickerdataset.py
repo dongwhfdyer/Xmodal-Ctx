@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 import numpy as np
 import itertools
@@ -8,6 +9,8 @@ from data.utils import nostdout
 # from .example import Example
 # from .utils import nostdout
 from pycocotools.coco import COCO as pyCOCO
+
+from utils.utils import create_folders, delete_folders
 
 
 class Dataset(object):
@@ -55,6 +58,10 @@ class ValueDataset(Dataset):
 
             value_tensors = {}
             lengths = [0, ] + list(itertools.accumulate([len(x) for x in batch]))
+            # # ---------kkuhn-block------------------------------ # kuhn: delete
+            # lengths[:-1]
+            # lengths[1:]
+            # # ---------kkuhn-block------------------------------
             for k, v in value_tensors_flattened.items():
                 value_tensors[k] = [v[s:e] for (s, e) in zip(lengths[:-1], lengths[1:])]
 
@@ -150,14 +157,14 @@ class PairedDataset(Dataset):
         self.txt_ctx_field = self.fields["txt_ctx"]
         self.vis_ctx_field = self.fields["vis_ctx"]
 
-    def image_set(self):
+    def image_set(self):  # remove duplicate image id and construct a dataset
         img_list = [e.object for e in self.examples]
         image_set = unique(img_list)
         examples = [Example.fromdict({'object': i}) for i in image_set]
         dataset = Dataset(examples, {'object': self.object_field})
         return dataset
 
-    def text_set(self):
+    def text_set(self):  # remove duplicate text and construct a dataset
         text_list = [e.text for e in self.examples]
         text_list = unique(text_list)
         examples = [Example.fromdict({'text': t}) for t in text_list]
@@ -191,95 +198,66 @@ class PairedDataset(Dataset):
 
 class COCO(PairedDataset):
     def __init__(
-            self, fields, ann_root, id_root=None, use_restval=True, cut_validation=False
+            self, fields, ann_root, id_root=None,
     ):
-        roots = {}
-        roots['train'] = os.path.join(ann_root, 'captions_train2014.json')
-        roots['val'] = os.path.join(ann_root, 'captions_val2014.json')
-        roots['test'] = os.path.join(ann_root, 'captions_val2014.json')
-        roots['trainrestval'] = (roots['train'], roots['val'])
+        self.roots = os.path.join(ann_root, 'captions_train2014.json')
 
-        if id_root is not None:  # True
-            ids = {}
-            ids['train'] = np.load(os.path.join(id_root, 'coco_train_ids.npy'))  # [413915,]
-            ids['val'] = np.load(os.path.join(id_root, 'coco_dev_ids.npy'))  # [25000,]
-            if cut_validation:  # False
-                ids['val'] = ids['val'][:5000]
-            ids['test'] = np.load(os.path.join(id_root, 'coco_test_ids.npy'))  # [25000,]
-            ids['trainrestval'] = (  # It's a tuple. ([413915,],[152520,])
-                ids['train'],
-                np.load(os.path.join(id_root, 'coco_restval_ids.npy')))
-
-            if use_restval:  # True
-                roots['train'] = roots['trainrestval']
-                ids['train'] = ids['trainrestval']
-        else:
-            ids = None
-
-        with nostdout():
-            self.train_examples, self.val_examples, self.test_examples = self.get_samples(roots, ids)
-        examples = self.train_examples + self.val_examples + self.test_examples
-
+        self.ids = np.load(os.path.join(id_root, 'coco_train_ids.npy'))  # [413915,]
+        self.coco = pyCOCO(self.roots)
+        examples = self.collect_samples()
         super(COCO, self).__init__(examples, fields)
 
-    @property
-    def splits(self):
-        train_split = PairedDataset(self.train_examples, self.fields)
-        val_split = PairedDataset(self.val_examples, self.fields)
-        test_split = PairedDataset(self.test_examples, self.fields)
-        return train_split, val_split, test_split
+    def collect_samples(self):
+        examples = []
+        # # ---------kkuhn-block------------------------------ # kuhn: delete it
+        # saving_list = []
+        # # delete one file
+        # delete_folders("temp")
+        # create_folders("temp")
+        # # ---------kkuhn-block------------------------------
+        for index in range(len(self.ids)):
+            ann_id = self.ids[index]  # e.g. 787980
+            caption = self.coco.anns[ann_id]['caption']  # ground truth. e.g. A restroom sign with a picture of a toilet and a sink.
+            img_id = self.coco.anns[ann_id]['image_id']  # e.g.57870
+            # # ---------kkuhn-block------------------------------ # kuhn: delete it
+            # if img_id not in saving_list:
+            #     saving_list.append(img_id)
+            #     with open('temp/savecontent.txt', 'a') as f:
+            #         f.write(str(img_id) + " " + caption + '\n')
+            #     imgName = self.coco.imgs[img_id]['file_name']
+            #     imgPath = os.path.join("/home/pcl/kuhn/datasets/coco", 'train2014', imgName)
+            #     shutil.copy(imgPath, "temp")
+            # if saving_list.__len__() == 10:
+            #     exit()
+            # # ---------kkuhn-block------------------------------
+            example = {
+                "img_id": img_id,
+                "object": img_id,
+                "text": caption,
+                "txt_ctx": img_id,
+                "vis_ctx": img_id
+            }
+            example = Example.fromdict(example)
+            examples.append(example)
+        return examples
 
-    def get_samples(self, roots, ids_dataset=None):
-        train_samples = []
-        val_samples = []
-        test_samples = []
+    def __getitem__(self, index=None):
+        ann_id = self.ids[index]  # e.g. 787980
+        caption = self.coco.anns[ann_id]['caption']  # e.g. A restroom sign with a picture of a toilet and a sink.
+        img_id = self.coco.anns[ann_id]['image_id']  # e.g.57870
 
-        for split in ['train', 'val', 'test']:
-            if isinstance(roots[split], tuple):  # tackle the situation when "train" and "val" got together.
-                coco_dataset = (pyCOCO(roots[split][0]), pyCOCO(roots[split][1]))
-            else:
-                coco_dataset = (pyCOCO(roots[split]),)
-
-            if ids_dataset is None:
-                ids = list(coco_dataset.anns.keys())
-            else:
-                ids = ids_dataset[split]
-
-            if isinstance(ids, tuple):
-                bp = len(ids[0])  # the length of "train" ids
-                ids = list(ids[0]) + list(ids[1])  # concat train and val ids
-            else:
-                bp = len(ids)
-
-            for index in range(len(ids)):
-                if index < bp:  # train
-                    coco = coco_dataset[0]
-                else:  # val
-                    coco = coco_dataset[1]
-
-                ann_id = ids[index]  # e.g. 787980
-                caption = coco.anns[ann_id]['caption']  # e.g. A restroom sign with a picture of a toilet and a sink.
-                img_id = coco.anns[ann_id]['image_id']  # e.g.57870
-                filename = coco.loadImgs(img_id)[0]['file_name']  # e.g. 'train2014/COCO_train2014_00000057870.jpg'
-                filename = f"{filename.split('_')[1]}/{filename}"
-
-                example = {
-                    "img_id": img_id,
-                    "object": img_id,
-                    "text": caption,
-                    "txt_ctx": img_id,
-                    "vis_ctx": img_id
-                }
-                example = Example.fromdict(example)
-
-                if split == 'train':
-                    train_samples.append(example)
-                elif split == 'val':
-                    val_samples.append(example)
-                elif split == 'test':
-                    test_samples.append(example)
-
-        return train_samples, val_samples, test_samples
+        example = {
+            "img_id": img_id,
+            "object": img_id,
+            "text": caption,
+            "txt_ctx": img_id,
+            "vis_ctx": img_id
+        }
+        example = Example.fromdict(example)
+        data = {}
+        for field_name, field in self.fields.items():
+            data[field_name] = field.preprocess(getattr(example, field_name))
+        return data
 
 
 class PuzzlePairedDataset(Dataset):
