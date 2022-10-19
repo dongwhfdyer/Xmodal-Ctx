@@ -67,13 +67,12 @@ def prepareField():
     text_field.vocab = pickle.load(open(vocab_file, 'rb'))
     txt_ctx_field = TxtCtxField(ctx_file=args.dataset_root / "txt_ctx.hdf5", k=args.topk, preload=args.preload)
     vis_ctx_field = VisCtxField(ctx_file=args.dataset_root / "vis_ctx.hdf5", preload=args.preload)
-    return object_field, text_field, text_field, txt_ctx_field, vis_ctx_field
+    return object_field, text_field, txt_ctx_field, vis_ctx_field
 
 
 if __name__ == '__main__':
     prepareArgs()
-
-    object_field, text_field, text_field, txt_ctx_field, vis_ctx_field = prepareField()
+    object_field, text_field, txt_ctx_field, vis_ctx_field = prepareField()
 
     fields = {
         "object": object_field, "text": text_field, "img_id": RawField(),

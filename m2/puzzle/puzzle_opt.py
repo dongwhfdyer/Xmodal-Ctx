@@ -16,3 +16,5 @@ p_opt.puzzle_file = "annotations/trainvalRandom9Info.txt"
 # ---------kkuhn-block------------------------------
 
 p_opt.model_path = r"backup_models/resnet50-19c8e357.pth"
+p_opt.batch_size = 50
+p_opt.gpus = [0]

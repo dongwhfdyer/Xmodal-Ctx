@@ -125,5 +125,18 @@ def testhdf5saving():
     obj.close()
 
 
+def test_onehots():
+    import torch as t
+    import numpy as np
+
+    batch_size = 8
+    class_num = 10199
+    label = np.random.randint(0, class_num, size=(batch_size, 1))
+    label = t.LongTensor(label)
+
+    y_one_hot = t.zeros(batch_size, class_num).scatter_(1, label, 1)
+    print(y_one_hot)
+
+
 if __name__ == '__main__':
-    testhdf5saving()
+    test_onehots()
