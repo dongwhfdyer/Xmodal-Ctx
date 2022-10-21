@@ -50,13 +50,11 @@ class Features2HDF5:
         self.obj.close()
 
 
-class Features2HDF5_v2:
+class Features2HDF5_v2(Features2HDF5):
     def __init__(self, objPath):
-        if os.path.isfile(objPath):
-            os.remove(objPath)
-        self.objPath = objPath
+        super().__init__(objPath)
         self.obj = h5py.File(self.objPath, 'w')
-        print("obj file created in: ", os.path.abspath(objPath))
+
 
     def saveByBatch(self, featureDict):
         for img_id, feature in featureDict.items():
@@ -72,7 +70,7 @@ class Features2HDF5_v2:
 def featureExtractor(model, data_loader, device, bbox_aug):
     model.eval()
     results_dict = {}
-    fh = Features2HDF5_v2(r"featureOutputs/puzzleCOCOFeature.hdf5")
+    fh = Features2HDF5(r"featureOutputs/puzzleCOCOFeature.hdf5")
     cpu_device = torch.device("cpu")
     for batchInd, batch in enumerate(tqdm(data_loader)):
         images, targets, image_ids, scales = batch[0], batch[1], batch[2], batch[3:]
@@ -90,7 +88,7 @@ def featureExtractor(model, data_loader, device, bbox_aug):
             {img_id: result for img_id, result in zip(image_ids, output)}
         )
 
-        if batchInd % 100 == 0:  # todo: first epoch should not be saved.
+        if batchInd % 1000 == 0:  # todo: first epoch should not be saved.
             fh.saveByBatch(results_dict)
             # #---------kkuhn-block------------------------------ only for testing
             # obj = h5py.File(r"temp/rubb.hdf5", 'r')

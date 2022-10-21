@@ -1,3 +1,4 @@
+from einops import reduce
 from torch import nn
 import torch
 
@@ -18,11 +19,38 @@ class cls_head(nn.Module):
 class puzzleSolver(nn.Module):
     def __init__(self):
         super(puzzleSolver, self).__init__()
+        self.global_pool = nn.AdaptiveAvgPool2d(1)
+        self.textSuperLongConv = nn.Conv2d(1, 2048, kernel_size=(3, 10199), stride=1, padding=1)
+        self.mlp = nn.Sequential(
+            nn.Linear(4096, 512),
+            nn.ReLU(),
+            nn.Linear(512, 128),
+            nn.ReLU(),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+        )
+
 
     def forward(self, obj, caption, puzzle):
-        dd = caption[0].unsqueeze(1)
-        batch_size = dd.shape[0]
-        class_num = 10199
-        y_one_hot = torch.zeros(batch_size, class_num).to("cuda").scatter_(1, dd, 1)  # kuhn: specify the device
+        captionFeat = self.textSuperLongConv(caption[:, None, :, :])
+        captionFeat_ = self.global_pool(captionFeat).squeeze()
+        objFeat = reduce(obj, 'b h c -> b c', 'mean')[:,:2048]
 
-        pass
+        allFeature = torch.cat([captionFeat_, objFeat], dim=1)
+        clsOneHot = self.mlp(allFeature)
+        # convert one-hot to index
+        cls = torch.argmax(clsOneHot, dim=1)
+        return cls
+
+        # idea
+        # obj feature: [bs, bounding_box, 2048]
+        # global pooling -> [bs, 2048]
+
+        # caption: [bs, word_num, 10199]
+        # conv kernel size: [3 * 10199] * 2048
+        # conv ->: [bs, word_num-1, 2048]
+
+        # obj + caption -> [bs, 4096]
+        # MLP1 [4096, 512]
+        # MLP2 [512, 128]
+        # MLP3 [128, 64]

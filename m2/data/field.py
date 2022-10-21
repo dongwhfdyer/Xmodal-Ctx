@@ -1,6 +1,7 @@
 # coding: utf8
 import os
 from collections import Counter, OrderedDict
+import torch.nn.functional as F
 import sys
 from torch.utils.data.dataloader import default_collate
 from itertools import chain
@@ -136,21 +137,21 @@ class TextField(RawField):
         super(TextField, self).__init__(preprocessing, postprocessing)
 
     def preprocess(self, x):
-        if six.PY2 and isinstance(x, six.string_types) and not isinstance(x, six.text_type):
+        if six.PY2 and isinstance(x, six.string_types) and not isinstance(x, six.text_type):  # False
             x = six.text_type(x, encoding='utf-8')
-        if self.lower:
+        if self.lower:  # True
             x = six.text_type.lower(x)
-        x = self.tokenize(x.rstrip('\n')) # split into words list
-        if self.remove_punctuation:
+        x = self.tokenize(x.rstrip('\n'))  # split into words list
+        if self.remove_punctuation:  # True
             x = [w for w in x if w not in self.punctuations]
-        if self.preprocessing is not None:
+        if self.preprocessing is not None:  # False
             return self.preprocessing(x)
-        else:
-            return x
+        else:  # True
+            return x  # ['a', 'man', 'and', 'two', 'horses', 'work', 'in', 'a', 'field', 'surrounded', 'by', 'grassy', 'rolling', 'hills']
 
     def process(self, batch, device=None):
-        padded = self.pad(batch)
-        tensor = self.numericalize(padded, device=device)
+        padded = self.pad(batch)  # shape: (batch_size, max_len)
+        tensor = self.numericalize(padded, device=device)  # shape: (batch_size, max_len)
         return tensor
 
     def build_vocab(self, *args, **kwargs):
@@ -289,6 +290,16 @@ class TextField(RawField):
                 caption = ' '.join(caption)
             captions.append(caption)
         return captions
+
+
+class OnehotTextField(TextField):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def process(self, batch, device=None):
+        batchTensor = super().process(batch, device=device)
+        onehotTensor = F.one_hot(batchTensor, 10199).to(torch.float32)
+        return onehotTensor
 
 
 class puzzleIdField(RawField):

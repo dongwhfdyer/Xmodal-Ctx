@@ -91,6 +91,8 @@ if __name__ == '__main__':
 
     loss_fn = NLLLoss(ignore_index=text_field.vocab.stoi['<pad>']).to(cudaDevice)
 
+
+
     model = buildModel()
     # #---------kkuhn-block------------------------------ # kuhn: for testing
     # aa = text_field.
@@ -107,6 +109,9 @@ if __name__ == '__main__':
         out = out[:, :-1].contiguous()
         captions_gt = captions[:, 1:].contiguous()
         loss = loss_fn(out.view(-1, len(text_field.vocab)), captions_gt.view(-1))
+        # print(torch.cuda.memory_allocated() / 1024 / 1024)
+        # print(torch.cuda.memory_summary(device=None, abbreviated=False))
+
         pass
 
     pass

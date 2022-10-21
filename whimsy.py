@@ -138,5 +138,28 @@ def test_onehots():
     print(y_one_hot)
 
 
+def test_onehot_v2():
+    import torch
+    import torch.nn.functional as Fun
+    batchSize = 50
+    wordNum = 22
+    classNum = 10199
+    A = torch.randint(0, classNum, (batchSize, wordNum, classNum))
+    output = Fun.one_hot(A.argmax(dim=2), classNum)
+    sample1 = output[0][0].argmax(dim=0)
+    print(output)
+
+
+def test_onehot_v3():
+    import torch
+    import torch.nn.functional as Fun
+    batchSize = 50
+    wordNum = 22
+    classNum = 10199
+    A = torch.randint(0, classNum, (batchSize, wordNum))
+    output = Fun.one_hot(A, classNum)
+    print(output)
+
+
 if __name__ == '__main__':
-    test_onehots()
+    test_onehot_v3()

@@ -279,8 +279,8 @@ if __name__ == '__main__':
         "txt_ctx": txt_ctx_filed, "vis_ctx": vis_ctx_filed
     }
     dict_dataset_train = train_dataset.image_dictionary(fields)
-    # dict_dataset_val = val_dataset.image_dictionary(fields)
-    # dict_dataset_test = test_dataset.image_dictionary(fields)
+    dict_dataset_val = val_dataset.image_dictionary(fields)
+    dict_dataset_test = test_dataset.image_dictionary(fields)
     checkTime5 = time.time()
 
     ref_caps_train = list(train_dataset.text)

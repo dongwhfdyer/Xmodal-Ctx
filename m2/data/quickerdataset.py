@@ -27,7 +27,6 @@ class Dataset(object):
             for field_name, field in self.fields.items():
                 data = [x[field_name] for x in batch]
                 tensors[field_name] = field.process(data)
-
             return tensors
 
         return collate

@@ -71,7 +71,7 @@ class Projector(nn.Module):
             "whole": torch.Tensor([[0.5, 0.5, 0.5, 0.5]])
         }
 
-        # ctx T
+        # ctx T  [9*12, 512] posEncoding[9*12,512]
         for k in self.txt_keys:
             pos_k = txt_ctx[k]["pos"]
             embed_k = txt_ctx[k]["embed"]

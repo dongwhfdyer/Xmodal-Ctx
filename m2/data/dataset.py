@@ -19,9 +19,12 @@ class Dataset(object):
         def collate(batch):
             tensors = {}
             for field_name, field in self.fields.items():
+                # data: e.g.
+                # ['a', 'man', 'in', 'blue', 'jeans', 'talking', 'on', 'a', 'cell', 'phone']
+                # ['a', 'man', 'and', 'two', 'horses', 'work', 'in', 'a', 'field', 'surrounded', 'by', 'grassy', 'rolling', 'hills']
+                # ...
                 data = [x[field_name] for x in batch]
                 tensors[field_name] = field.process(data)
-
             return tensors
 
         return collate
