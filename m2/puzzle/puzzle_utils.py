@@ -1,4 +1,8 @@
 import logging
+import os
+
+import torch
+
 
 class AverageMeter(object):
     """Computes and stores the average and current value
@@ -19,6 +23,23 @@ class AverageMeter(object):
         self.sum += val * n
         self.count += n
         self.avg = self.sum / self.count
+
+
+
+def save_checkpoint(state, is_best, checkpoint):
+    fold = ''
+    cur_name = 'checkpoint.pth.tar'
+    filepath = os.path.join(checkpoint, fold + cur_name)
+    curpath = os.path.join(checkpoint, fold + 'model_cur.pth')
+
+    torch.save(state, filepath)
+    torch.save(state['state_dict'], curpath)
+
+    if is_best:
+        model_name = 'model_' + str(state['epoch']) + '_' + str(int(round(state['train_acc'] * 100, 0))) + '_' + str(int(round(state['acc'] * 100, 0))) + '.pth'
+        model_path = os.path.join(checkpoint, fold + model_name)
+        torch.save(state['state_dict'], model_path)
+        logger.info("update best model")
 
 
 def advancedLogger():

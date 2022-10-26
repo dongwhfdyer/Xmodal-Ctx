@@ -13,6 +13,7 @@ p_opt.model_path = "backup_models/resnet50-19c8e357.pth"
 p_opt.save_prefix = "three_cls"
 p_opt.use_cuda = True
 p_opt.puzzle_file = "annotations/trainvalRandom9Info.txt"
+p_opt.puzzle_id_mapping_file = "permutations_hamming_max_64.npy"
 # ---------kkuhn-block------------------------------
 
 p_opt.model_path = r"backup_models/resnet50-19c8e357.pth"

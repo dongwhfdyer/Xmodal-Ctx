@@ -55,7 +55,6 @@ class Features2HDF5_v2(Features2HDF5):
         super().__init__(objPath)
         self.obj = h5py.File(self.objPath, 'w')
 
-
     def saveByBatch(self, featureDict):
         for img_id, feature in featureDict.items():
             img_id = str(img_id)

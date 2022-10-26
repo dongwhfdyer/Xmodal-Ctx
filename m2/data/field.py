@@ -303,8 +303,9 @@ class OnehotTextField(TextField):
 
 
 class puzzleIdField(RawField):
-    def __init__(self, puzzleFile=None, preprocessing=None, postprocessing=None, ):
+    def __init__(self, puzzleFile=None, puzzleIdMappingFile=None, preprocessing=None, postprocessing=None, ):
         pfile = open(puzzleFile, 'r')
+        self.id2puzzleOrder = np.load(puzzleIdMappingFile)
         self.puzzleIdDict = {}
         for line in pfile:
             line = line.strip().split(' ')
@@ -314,7 +315,9 @@ class puzzleIdField(RawField):
 
     def preprocess(self, image_id):
         puzzleid = self.puzzleIdDict[image_id]
-        return puzzleid
+        puzzleOrder = self.id2puzzleOrder[puzzleid]
+        return puzzleOrder
+
 
     # def process(self, batch, *args, **kwargs):
     #     batch = torch.stack(batch)

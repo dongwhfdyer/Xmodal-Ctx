@@ -6,6 +6,7 @@ import time
 import numpy as np
 import torch
 from torch import nn
+from tqdm.contrib import tenumerate
 
 from data import ImageDetectionsField, TextField, RawField, DataLoader
 from data.field import puzzleIdField, OnehotTextField
@@ -14,7 +15,7 @@ from puzzle_opt import p_opt
 from data.dataset import PuzzleCOCO
 # import Path
 from pathlib import Path
-from puzzle_utils import logger, AverageMeter
+from puzzle_utils import logger, AverageMeter, save_checkpoint
 
 
 def prepareField():
@@ -23,7 +24,7 @@ def prepareField():
     text_field = OnehotTextField(init_token='<bos>', eos_token='<eos>', lower=True, tokenize='spacy', remove_punctuation=True, nopoints=False)
     vocab_file = 'vocab/vocab_coco.pkl'
     text_field.vocab = pickle.load(open(vocab_file, 'rb'))
-    puzzle_field = puzzleIdField(puzzleFile=datasetRoot / p_opt.puzzle_file, )
+    puzzle_field = puzzleIdField(puzzleFile=datasetRoot / p_opt.puzzle_file, puzzleIdMappingFile=datasetRoot / p_opt.puzzle_id_mapping_file)
     fields = {
         "object": object_field,
         "text": text_field,
@@ -39,6 +40,7 @@ def genOneItem(dataloader):
     puzzle = data["puzzle_id"].to(cudaDevice, non_blocking=True)  # kuhn: what's non_blocking?
     captions = data["text"].to(cudaDevice, non_blocking=True)
     return obj, puzzle, captions
+
 
 def getOneItemV2(data):
     obj = data["object"].to(cudaDevice, non_blocking=True)
@@ -61,21 +63,39 @@ def train(train_loader, model, criterion, optimizer):
     model.train()
     losses = AverageMeter()
     train_acc = AverageMeter()
-
+    # todo: make sure that all data go to gpu.
     for i, data in enumerate(train_loader):  # batch_size * 3 * 512 * 512 ,batch_szie * 1
         obj, puzzle, captions = getOneItemV2(data)
-        out = model(obj, puzzle, captions)
-        loss = criterion(out, puzzle)
-
-
+        out = model(obj=obj, caption=captions)  # todo: if it is too slow, unwrap these function. and delete the puzzle field in model definition
+        loss = criterion(out, puzzle)  # todo: try half precision mode.
         # inputs, targets = torch.autograd.Variable(inputs), torch.autograd.Variable(targets)
-
         update(loss, optimizer)
         losses.update(loss.item(), obj.size(0))
-        train_acc.update(torch.sum(torch.argmax(outputs, dim=1) == labels).item() / inputs.size(0))
+        train_acc.update(torch.sum(torch.argmax(out, dim=2) == puzzle).item() / (puzzle.shape[0] * puzzle.shape[1]))
+        # # ---------kkuhn-block------------------------------ # kuhn: only for debug
+        # ss = torch.argmax(out, dim=2)
+        # kk = ss == puzzle
+        # ll = torch.sum(kk)
+        # # ---------kkuhn-block------------------------------
+        print("--------------------------------------------------")
         # if i % 10 == 0:
         #     logger.info("Epoch: [{}][{}/{}]\t Loss: {:.4f} Acc: {:.4f}".format(eopoch, i, len(train_loader), losses.avg, train_acc.avg))
     return losses.avg, train_acc.avg
+
+
+def val(val_loader, model, criterion):
+    model.eval()
+    losses = AverageMeter()
+    val_acc = AverageMeter()
+    for i, data in enumerate(val_loader):  # batch_size * 3 * 512 * 512 ,batch_szie * 1
+        obj, puzzle, captions = getOneItemV2(data)
+        out = model(obj=obj, caption=captions)
+        loss = criterion(out, puzzle)
+        losses.update(loss.item(), obj.size(0))
+        val_acc.update(torch.sum(torch.argmax(out, dim=2) == puzzle).item() / (puzzle.shape[0] * puzzle.shape[1]))
+        # if i % 10 == 0:
+        #     logger.info("Epoch: [{}][{}/{}]\t Loss: {:.4f} Acc: {:.4f}".format(eopoch, i, len(val_loader), losses.avg, val_acc.avg))
+    return losses.avg, val_acc.avg
 
 
 def update(loss, optimizer):
@@ -89,7 +109,7 @@ if __name__ == '__main__':
     global best_acc
     best_acc = 0
     initSeed()
-    cudaDevice = "cuda:0"
+    cudaDevice = "cuda:1"
     time_now = time.strftime('%m_%d_%H_%M', time.localtime(time.time()))
     checkpoint_path = Path("runs/train/{}".format(time_now))
     # ---------kkuhn-block------------------------------

@@ -26,20 +26,28 @@ class puzzleSolver(nn.Module):
             nn.ReLU(),
             nn.Linear(512, 128),
             nn.ReLU(),
-            nn.Linear(128, 64),
+            nn.Linear(128, 81),
             nn.ReLU(),
         )
 
-
-    def forward(self, obj, caption, puzzle):
+    def forward(self, obj, caption):
         captionFeat = self.textSuperLongConv(caption[:, None, :, :])
         captionFeat_ = self.global_pool(captionFeat).squeeze()
-        objFeat = reduce(obj, 'b h c -> b c', 'mean')[:,:2048]
+        objFeat = reduce(obj, 'b h c -> b c', 'mean')[:, :2048]
 
         allFeature = torch.cat([captionFeat_, objFeat], dim=1)
-        clsOneHot = self.mlp(allFeature)
-        # convert one-hot to index
-        cls = torch.argmax(clsOneHot, dim=1)
+        # ---------kkuhn-block------------------------------ # output the puzzle order
+        cls = self.mlp(allFeature)
+        cls = cls.view(cls.size(0), 9, 9)
+        # ---------kkuhn-block------------------------------
+
+        # #---------kkuhn-block------------------------------ # output the puzzle id
+        # clsOneHot = self.mlp(allFeature)
+        # cls = torch.argmax(clsOneHot, dim=1)
+        # #---------kkuhn-block------------------------------
+
+        print("--------------------------------------------------")
+        pass
         return cls
 
         # idea
