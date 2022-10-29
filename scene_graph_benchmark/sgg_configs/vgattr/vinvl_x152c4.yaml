@@ -32,8 +32,8 @@ DATASETS:
   #    TEST: ("flickr30k/tsv/flickr30k.yaml",)
   LABELMAP_FILE: "visualgenome/VG-SGG-dicts-vgoi6-clipped.json"
   TRAIN: ("visualgenome/train_vgoi6_clipped.yaml",)
-  TEST: ("coco_2014_train",)
-#  TEST: ("coco_2014_val",)
+#  TEST: ("coco_2014_train",)
+  TEST: ("coco_2014_val",)
   #  TEST: ("visualgenome/test_vgoi6_clipped.yaml",)
   FACTORY_TRAIN: ("VGTSVDataset",)
   FACTORY_TEST: ("VGTSVDataset",)

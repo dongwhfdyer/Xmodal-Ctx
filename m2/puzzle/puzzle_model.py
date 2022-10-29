@@ -33,7 +33,8 @@ class puzzleSolver(nn.Module):
     def forward(self, obj, caption):
         captionFeat = self.textSuperLongConv(caption[:, None, :, :])
         captionFeat_ = self.global_pool(captionFeat).squeeze()
-        objFeat = reduce(obj, 'b h c -> b c', 'mean')[:, :2048]
+        objFeat = reduce(obj, 'b h c -> b c', 'mean')
+        # objFeat = reduce(obj, 'b h c -> b c', 'mean')[:, :2048] # kuhn: When the input is 2054, use this line.
 
         allFeature = torch.cat([captionFeat_, objFeat], dim=1)
         # ---------kkuhn-block------------------------------ # output the puzzle order

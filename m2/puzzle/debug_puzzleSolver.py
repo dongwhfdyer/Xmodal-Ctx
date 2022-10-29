@@ -55,7 +55,7 @@ if __name__ == '__main__':
 
     # ---------kkuhn-block------------------------------ # inference one sample
     obj, puzzle, captions = genOneItem(train_dataloader)
-    out = model(obj=obj, puzzle=puzzle, caption=captions)
+    out = model(obj=obj, caption=captions)
     loss = criterion(out, puzzle)
     # ---------kkuhn-block------------------------------
 

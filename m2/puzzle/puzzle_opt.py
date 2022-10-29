@@ -3,7 +3,8 @@ from easydict import EasyDict as edict
 p_opt = edict()
 # ---------kkuhn-block------------------------------ general config
 p_opt.dataset_root = "datasets"
-p_opt.obj_file = "oscar.hdf5"
+# p_opt.obj_file = "oscar.hdf5"
+p_opt.obj_file = "puzzleCOCOFeature.hdf5"
 p_opt.preload = False
 p_opt.topk = 12
 p_opt.start_epoch = 0

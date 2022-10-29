@@ -346,6 +346,10 @@ class PuzzleCOCO(PuzzlePairedDataset):
         super(PuzzleCOCO, self).__init__(examples, fields)
 
     @property
+    def get_train_dataset_only(self):
+        return PuzzlePairedDataset(self.train_examples, self.fields)
+
+    @property
     def splits(self):
         train_split = PuzzlePairedDataset(self.train_examples, self.fields)
         val_split = PuzzlePairedDataset(self.val_examples, self.fields)

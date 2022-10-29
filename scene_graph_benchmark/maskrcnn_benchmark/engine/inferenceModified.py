@@ -26,7 +26,7 @@ from .bbox_aug import im_detect_bbox_aug
 
 class Features2HDF5:
     def __init__(self, objPath):
-        if os.path.isfile(objPath):
+        if os.path.isfile(objPath):  # todo: decide whether to delete the old file
             os.remove(objPath)
         self.objPath = objPath
 
@@ -69,7 +69,7 @@ class Features2HDF5_v2(Features2HDF5):
 def featureExtractor(model, data_loader, device, bbox_aug):
     model.eval()
     results_dict = {}
-    fh = Features2HDF5(r"featureOutputs/puzzleCOCOFeature.hdf5")
+    fh = Features2HDF5(r"featureOutputs/puzzleCOCOFeatureVal.hdf5")
     cpu_device = torch.device("cpu")
     for batchInd, batch in enumerate(tqdm(data_loader)):
         images, targets, image_ids, scales = batch[0], batch[1], batch[2], batch[3:]
@@ -87,7 +87,7 @@ def featureExtractor(model, data_loader, device, bbox_aug):
             {img_id: result for img_id, result in zip(image_ids, output)}
         )
 
-        if batchInd % 1000 == 0:  # todo: first epoch should not be saved.
+        if batchInd % 5 == 0:  # todo: first epoch should not be saved.
             fh.saveByBatch(results_dict)
             # #---------kkuhn-block------------------------------ only for testing
             # obj = h5py.File(r"temp/rubb.hdf5", 'r')
@@ -116,7 +116,9 @@ def featureExtractor(model, data_loader, device, bbox_aug):
     if len(results_dict) > 0:
         fh.saveByBatch(results_dict)
         results_dict = {}
-    fh.close()
+    # #---------kkuhn-block------------------------------ # kuhn: it depends on how to save the batch
+    # fh.close()
+    # #---------kkuhn-block------------------------------
 
     return results_dict
 

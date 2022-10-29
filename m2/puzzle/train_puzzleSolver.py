@@ -120,10 +120,11 @@ if __name__ == '__main__':
 
     annoFolder = datasetRoot / "annotations"
     puzzlecoco = PuzzleCOCO(fields, annoFolder, annoFolder)
+    train_dataset = puzzlecoco.get_train_dataset_only
 
-    train_dataset, val_dataset, test_dataset = puzzlecoco.splits
+    # train_dataset, val_dataset, test_dataset = puzzlecoco.splits
     train_dataloader = DataLoader(train_dataset, batch_size=p_opt.batch_size, shuffle=True, num_workers=0, drop_last=True)
-    val_dataloader = DataLoader(val_dataset, batch_size=p_opt.batch_size, shuffle=True, num_workers=0, drop_last=True)
+    # val_dataloader = DataLoader(val_dataset, batch_size=p_opt.batch_size, shuffle=True, num_workers=0, drop_last=True)
     # ---------kkuhn-block------------------------------
 
     # ---------kkuhn-block------------------------------ # criterion, model, optimizer, scheduler
@@ -136,7 +137,7 @@ if __name__ == '__main__':
     for epoch in range(p_opt.epochs):
         logger.info('\nEpoch: [%d | %d] LR: %.8f' % (epoch + 1, p_opt.epochs, optimizer.param_groups[0]['lr']))
         train_loss, train_acc = train(train_dataloader, model, criterion, optimizer)
-        test_loss, val_acc = val(val_dataloader, model, criterion)
+        # test_loss, val_acc = val(val_dataloader, model, criterion)
 
         scheduler.step()
         is_best = val_acc >= best_acc
