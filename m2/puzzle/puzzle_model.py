@@ -1,6 +1,8 @@
 from einops import reduce
 from torch import nn
+import torchsummary
 import torch
+import torch.nn.functional as F
 
 
 class cls_head(nn.Module):
@@ -16,19 +18,33 @@ class cls_head(nn.Module):
         return x
 
 
+class MLP(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim, num_layers):
+        super().__init__()
+        self.num_layers = num_layers
+        h = [hidden_dim] * (num_layers - 1)
+        self.layers = nn.ModuleList(nn.Linear(n, k) for n, k in zip([input_dim] + h, h + [output_dim]))
+
+    def forward(self, x):
+        for i, layer in enumerate(self.layers):
+            x = F.relu(layer(x)) if i < self.num_layers - 1 else layer(x)
+        return x
+
+
 class puzzleSolver(nn.Module):
     def __init__(self):
         super(puzzleSolver, self).__init__()
         self.global_pool = nn.AdaptiveAvgPool2d(1)
         self.textSuperLongConv = nn.Conv2d(1, 2048, kernel_size=(3, 10199), stride=1, padding=1)
-        self.mlp = nn.Sequential(
-            nn.Linear(4096, 512),
-            nn.ReLU(),
-            nn.Linear(512, 128),
-            nn.ReLU(),
-            nn.Linear(128, 81),
-            nn.ReLU(),
-        )
+        # self.mlp = nn.Sequential(
+        #     nn.Linear(4096, 512),
+        #     nn.ReLU(),
+        #     nn.Linear(512, 128),
+        #     nn.ReLU(),
+        #     nn.Linear(128, 81),
+        #     nn.ReLU(),
+        # )
+        self.mlp = MLP(4096, 512, 81, 3)
 
     def forward(self, obj, caption):
         captionFeat = self.textSuperLongConv(caption[:, None, :, :])
@@ -47,8 +63,6 @@ class puzzleSolver(nn.Module):
         # cls = torch.argmax(clsOneHot, dim=1)
         # #---------kkuhn-block------------------------------
 
-        print("--------------------------------------------------")
-        pass
         return cls
 
         # idea
@@ -63,3 +77,7 @@ class puzzleSolver(nn.Module):
         # MLP1 [4096, 512]
         # MLP2 [512, 128]
         # MLP3 [128, 64]
+
+
+if __name__ == '__main__':
+    torchsummary.summary(puzzleSolver.cuda(), (3, 608, 608))

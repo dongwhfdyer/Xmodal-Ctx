@@ -6,7 +6,6 @@ import torch
 from data import ImageDetectionsField, TextField, RawField, DataLoader
 from data.field import puzzleIdField, OnehotTextField
 from puzzle.puzzle_model import puzzleSolver
-from puzzle_opt import p_opt
 from data.dataset import PuzzleCOCO
 # import Path
 from pathlib import Path

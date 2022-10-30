@@ -25,7 +25,6 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-
 def save_checkpoint(state, is_best, checkpoint):
     fold = ''
     cur_name = 'checkpoint.pth.tar'
