@@ -68,6 +68,11 @@ def evaluate_loss(model, dataloader, loss_fn, text_field):
                 running_loss += loss.item()
                 pbar.set_postfix(loss=running_loss / (it + 1))
                 pbar.update()
+                # ---------kkuhn-block------------------------------ # kuhn: delete. Early stop
+                if it == 10:
+                    print("If you see this line, stop training and delete this line.")
+                    break
+                # ---------kkuhn-block------------------------------
 
     loss = running_loss / len(dataloader)
     ret = {"loss": loss}
@@ -103,6 +108,11 @@ def evaluate_metrics(model, dataloader, text_field):
                     gen['%d_%d' % (it, i)] = [gen_i, ]
                     gts['%d_%d' % (it, i)] = gts_i
                 pbar.update()
+                # ---------kkuhn-block------------------------------ # kuhn: delete. Early stop
+                if it == 10:
+                    print("If you see this line, stop training and delete this line.")
+                    break
+                # ---------kkuhn-block------------------------------
 
     gts = evaluation.PTBTokenizer.tokenize(gts)
     gen = evaluation.PTBTokenizer.tokenize(gen)
@@ -142,6 +152,12 @@ def train_xe(model, dataloader, optim, text_field):
             pbar.set_postfix(loss=running_loss / (it + 1))
             pbar.update()
             scheduler.step()
+
+            # ---------kkuhn-block------------------------------ kuhn: delete. it's only stop
+            if it == 10:
+                print("If you see this, stop training and delete this line.")
+                break
+            # ---------kkuhn-block------------------------------
 
     loss = running_loss / len(dataloader)
     ret = {"loss": loss}

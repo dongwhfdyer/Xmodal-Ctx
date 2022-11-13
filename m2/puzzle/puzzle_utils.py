@@ -26,19 +26,18 @@ class AverageMeter(object):
 
 
 def save_checkpoint(state, is_best, checkpoint):
-    fold = ''
     cur_name = 'checkpoint.pth.tar'
-    filepath = os.path.join(checkpoint, fold + cur_name)
-    curpath = os.path.join(checkpoint, fold + 'model_cur.pth')
+    filepath = os.path.join(checkpoint, cur_name)
+    curpath = os.path.join(checkpoint, "model_cur.pth")
 
     torch.save(state, filepath)
     torch.save(state['state_dict'], curpath)
 
     if is_best:
         model_name = 'model_' + str(state['epoch']) + '_' + str(int(round(state['train_acc'] * 100, 0))) + '_' + str(int(round(state['acc'] * 100, 0))) + '.pth'
-        model_path = os.path.join(checkpoint, fold + model_name)
+        model_path = os.path.join(checkpoint, model_name)
         torch.save(state['state_dict'], model_path)
-        logger.info("update best model")
+        logger.info("update best model: " + model_name)
 
 
 def advancedLogger():

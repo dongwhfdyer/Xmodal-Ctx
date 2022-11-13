@@ -1,7 +1,10 @@
 # Create the dataset
+import os
 import pickle
 
 import torch
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from data import ImageDetectionsField, TextField, RawField, DataLoader
 from data.field import puzzleIdField, OnehotTextField
@@ -9,6 +12,8 @@ from puzzle.puzzle_model import puzzleSolver
 from data.dataset import PuzzleCOCO
 # import Path
 from pathlib import Path
+
+from puzzle.puzzle_opt import get_args_parser
 
 
 def prepareField():
@@ -41,6 +46,7 @@ def build_model():
 
 if __name__ == '__main__':
     cudaDevice = "cuda:1"
+    p_opt = get_args_parser()
     datasetRoot = Path(p_opt.dataset_root)
     object_field, text_field, puzzle_field, fields = prepareField()
 
@@ -51,6 +57,10 @@ if __name__ == '__main__':
     train_dataloader = DataLoader(train_dataset, batch_size=p_opt.batch_size, shuffle=True, num_workers=0, drop_last=True)
     model = build_model()
     criterion = torch.nn.CrossEntropyLoss()
+
+    # ---------kkuhn-block------------------------------ # test dataset
+    dataSample = train_dataset.__getitem__(0)
+    # ---------kkuhn-block------------------------------
 
     # ---------kkuhn-block------------------------------ # inference one sample
     obj, puzzle, captions = genOneItem(train_dataloader)

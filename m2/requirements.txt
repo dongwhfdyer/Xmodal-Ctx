@@ -10,3 +10,8 @@ click==7.1.1
 h5py>=3.5.0
 numpy>=1.21.3
 packaging>=20.9
+einops
+torchsummary
+easydict
+guli
+tensorboardX

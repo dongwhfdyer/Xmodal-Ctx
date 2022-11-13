@@ -1,0 +1,2 @@
+#torchrun --nproc_per_node=2 puzzle/train_puzzleSolver.py --batch_size 400 --resume True --resumeTime 11_01_23_08 --start_epoch 7
+#CUDA_VISIBLE_DEVICES=1,2 torchrun --nproc_per_node 2 puzzle/train_puzzleSolver.py

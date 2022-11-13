@@ -35,7 +35,7 @@ class puzzleSolver(nn.Module):
     def __init__(self):
         super(puzzleSolver, self).__init__()
         self.global_pool = nn.AdaptiveAvgPool2d(1)
-        self.textSuperLongConv = nn.Conv2d(1, 2048, kernel_size=(3, 10199), stride=1, padding=1)
+        self.textSuperLongConv = nn.Conv2d(1, 1024, kernel_size=(3, 10199), stride=1, padding=1)
         # self.mlp = nn.Sequential(
         #     nn.Linear(4096, 512),
         #     nn.ReLU(),
@@ -44,7 +44,7 @@ class puzzleSolver(nn.Module):
         #     nn.Linear(128, 81),
         #     nn.ReLU(),
         # )
-        self.mlp = MLP(4096, 512, 81, 3)
+        self.mlp = MLP(3072, 512, 81, 3)
 
     def forward(self, obj, caption):
         captionFeat = self.textSuperLongConv(caption[:, None, :, :])
