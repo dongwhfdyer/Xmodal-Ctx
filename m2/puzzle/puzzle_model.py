@@ -44,6 +44,7 @@ class puzzleSolver(nn.Module):
         #     nn.Linear(128, 81),
         #     nn.ReLU(),
         # )
+        self.bn = nn.BatchNorm1d(3072)
         self.mlp = MLP(3072, 512, 81, 3)
 
     def forward(self, obj, caption):
@@ -54,7 +55,10 @@ class puzzleSolver(nn.Module):
 
         allFeature = torch.cat([captionFeat_, objFeat], dim=1)
         # ---------kkuhn-block------------------------------ # output the puzzle order
+        # BN
+        allFeature = self.bn(allFeature)
         cls = self.mlp(allFeature)
+        cls = F.dropout(cls, p=0.5) # kuhn: remember to make it different when validation
         cls = cls.view(cls.size(0), 9, 9)
         # ---------kkuhn-block------------------------------
 

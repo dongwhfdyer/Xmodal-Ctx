@@ -165,8 +165,9 @@ def val(val_loader, model, criterion, device):
         val_acc.update(torch.sum(out_processed == puzzle).item() / (puzzle.shape[0] * puzzle.shape[1]))  # todo: very very important: if dim is 1 or 2.
         if is_main_process() and i in picktwoIter:
             order = out_processed[0].cpu().numpy().tolist()
-            cocoImgPath = "datasets/coco/val2014/COCO_val2014_" + str(img_ids[0].item()).zfill(12) + ".jpg"
-            puzzlecocoImgPath = "datasets/puzzlecoco/val2014/COCO_val2014_" + str(img_ids[0].item()).zfill(12) + ".jpg"
+            cocoImgPath = "datasets/coco/val2014Random9Crop/COCO_val2014_" + str(img_ids[0].item()).zfill(12) + ".jpg"
+            # cocoImgPath = "datasets/coco/train2014Random9Crop/COCO_train2014_" + str(img_ids[0].item()).zfill(12) + ".jpg"  # kuhn: change to val
+            # puzzlecocoImgPath = "datasets/puzzlecoco/val2014/COCO_val2014_" + str(img_ids[0].item()).zfill(12) + ".jpg"
             resumedOne = resume9blocks_v2(cocoImgPath, order)
             originalOne = Image.open(cocoImgPath)
             resumedOne = resumedOne.resize((originalOne.width, originalOne.height))
@@ -182,8 +183,8 @@ def val(val_loader, model, criterion, device):
         # if i == 5:
         #     break
         # # ---------kkuhn-block------------------------------
-        # if device != torch.device("cpu"):
-        #     torch.cuda.synchronize(device)
+        if device != torch.device("cpu"):
+            torch.cuda.synchronize(device)
     return losses.avg, val_acc.avg, imgs_for_vis
 
 
@@ -253,10 +254,10 @@ if __name__ == '__main__':
 
     train_batch_sampler = torch.utils.data.BatchSampler(train_sampler, batch_size, drop_last=True)
 
-    nw = min([os.cpu_count(), batch_size if batch_size > 1 else 0, 8])  # kuhn: test nw
+    nw = min([os.cpu_count(), batch_size if batch_size > 1 else 0, 8])
     print("Using {} dataloader workers every process".format(nw))
 
-    train_dataloader = DataLoader(train_dataset, batch_sampler=train_batch_sampler, pin_memory=True, num_workers=nw)  # kuhn: test pin_memory
+    train_dataloader = DataLoader(train_dataset, batch_sampler=train_batch_sampler, pin_memory=True, num_workers=nw)
     val_dataloader = DataLoader(val_dataset, batch_size=batch_size, sampler=val_sampler, num_workers=nw, pin_memory=True, drop_last=True)
     # ---------kkuhn-block------------------------------
 

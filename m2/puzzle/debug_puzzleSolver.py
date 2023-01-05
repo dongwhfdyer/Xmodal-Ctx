@@ -4,6 +4,7 @@ import pickle
 
 import torch
 import sys
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from data import ImageDetectionsField, TextField, RawField, DataLoader
@@ -35,7 +36,7 @@ def prepareField():
 def genOneItem(dataloader):
     data = dataloader.__iter__().__next__()
     obj = data["object"].to(cudaDevice, non_blocking=True)
-    puzzle = data["puzzle_id"].to(cudaDevice, non_blocking=True)  # kuhn: what's non_blocking?
+    puzzle = data["puzzle_id"].to(cudaDevice, non_blocking=True)
     captions = data["text"].to(cudaDevice, non_blocking=True)
     return obj, puzzle, captions
 

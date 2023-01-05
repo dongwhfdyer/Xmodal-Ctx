@@ -111,6 +111,7 @@ def resume9blocks_v2(imgPath, permutation):
     img = Image.fromarray(np.uint8(img))
     return img
 
+
 def get_one_image(img_list):
     max_width = 0
     total_height = 200  # padding
@@ -151,6 +152,22 @@ def tackleOneFolder(imgFolder, destFolder, annotationfile):
     f.close()
 
 
+def tackleOneFolder_readVersion(cocoPath, annotationfile):
+    cocoPath = Path(cocoPath)
+    with open(annotationfile, 'r') as f:
+        content = f.readlines()
+    tbar = tqdm(content)
+    for line in content:
+        tbar.update(1)
+        imgName, permutation_order = line.split()
+        cls = "train2014" if "train" in imgName else "val2014"
+        imgPath = cocoPath / cls / (imgName + ".jpg")
+        croppedImg = crop9(imgPath, permutations9[int(permutation_order)])
+        cls_target = "train2014Random9Crop" if "train" in imgName else "val2014Random9Crop"
+        savePath = cocoPath / cls_target / (imgName + ".jpg")
+        croppedImg.save(savePath)
+
+
 def tackleOneFolderReverse(imgFolder, destFolder, annotationfile):
     f = open(annotationfile, 'r')
     for line in f.readlines():
@@ -174,19 +191,46 @@ def create_folders(*folders):
             os.makedirs(folder)
 
 
-if __name__ == '__main__':
+def generatePuzzleCOCODataset():
+    """
+    Generate a COCO dataset with 9 blocks puzzle.
+    It's generating without any annotation. It will output an annotation file, and puzzle dataset.
+    """
     permutations9 = np.load("datasets/permutations_hamming_max_64.npy")
-    imgTrainFolder = Path("datasets/coco_captions/train2014")
-    imgValFolder = Path("datasets/coco_captions/val2014")
-    imgTrainDestFolder = Path("datasets/coco_captions/train2014Random9Crop")
-    imgValDestFolder = Path("datasets/coco_captions/val2014Random9Crop")
-    imgErrorFolder = Path("datasets/coco_captions/error")
-    imgResumedFolder = Path("datasets/coco_captions/resumed")
-    annotationTrainFile = "datasets/coco_captions/trainRandom9Info.txt"
-    annotationValFile = "datasets/coco_captions/valRandom9Info.txt"
+    imgTrainFolder = Path("datasets/coco/train2014")
+    imgValFolder = Path("datasets/coco/val2014")
+    imgTrainDestFolder = Path("datasets/coco/train2014Random9Crop")
+    imgValDestFolder = Path("datasets/coco/val2014Random9Crop")
+    imgErrorFolder = Path("datasets/coco/error")
+    imgResumedFolder = Path("datasets/coco/resumed")
+    annotationTrainFile = "datasets/coco/trainRandom9Info.txt"
+    annotationValFile = "datasets/coco/valRandom9Info.txt"
 
     delete_folders(imgTrainDestFolder, imgValDestFolder, imgErrorFolder, imgResumedFolder)
     create_folders(imgTrainDestFolder, imgValDestFolder, imgErrorFolder, imgResumedFolder)
     tackleOneFolder(imgTrainFolder, imgTrainDestFolder, annotationTrainFile)
     # tackleOneFolderReverse(imgTrainDestFolder, imgResumedFolder)
     tackleOneFolder(imgValFolder, imgValDestFolder, annotationValFile)
+
+
+def generatePuzzleCOCODataset_v2():
+    """
+    Generate a COCO dataset with 9 blocks puzzle.
+    It's generating with an annotation file. It will output the puzzle dataset according to the annotation file.
+    """
+    global permutations9
+    permutations9 = np.load("datasets/permutations_hamming_max_64.npy")
+    cocoImgFolder = Path("datasets/coco")
+    imgTrainDestFolder = Path("datasets/coco/train2014Random9Crop")
+    imgValDestFolder = Path("datasets/coco/val2014Random9Crop")
+    imgErrorFolder = Path("datasets/coco/error")
+    imgResumedFolder = Path("datasets/coco/resumed")
+    annotationTrainvalFile = "datasets/annotations/trainvalRandom9Info.txt"
+
+    delete_folders(imgTrainDestFolder, imgValDestFolder, imgErrorFolder, imgResumedFolder)
+    create_folders(imgTrainDestFolder, imgValDestFolder, imgErrorFolder, imgResumedFolder)
+    tackleOneFolder_readVersion(cocoImgFolder, annotationTrainvalFile)
+
+
+if __name__ == '__main__':
+    generatePuzzleCOCODataset_v2()
