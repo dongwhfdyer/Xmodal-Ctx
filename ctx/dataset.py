@@ -11,6 +11,8 @@ from torch.utils.data import Dataset
 from transformers import CLIPProcessor
 from torchvision.transforms import functional as F
 
+from utils import load_huggingface_model
+
 LENGTH_LIMIT = 75
 
 
@@ -58,11 +60,27 @@ def collate_tokens(batch):
 class VisualGenomeCaptions(Dataset):
     def __init__(self, ann_dir):
         super().__init__()
-        self.tokenizer = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32").tokenizer
+        CLIPPROCESSOR_NAME = "openai/clip-vit-base-patch32"
+        LOCAL_CLIPPROCESSOR_FILE = "pretrained/clip-processor.pt"
+        LOCAL_CAPS_FILE = "cache/captions.txt"
+        self.tokenizer = load_huggingface_model(CLIPProcessor, CLIPPROCESSOR_NAME, LOCAL_CLIPPROCESSOR_FILE, return_tokenizer=True)
         escapes = ''.join([chr(char) for char in range(0, 32)])
         self.translator = str.maketrans('', '', escapes)
 
-        self.caps = self.parse_annotations(Path(ann_dir))
+        self.caps = self.read_caps_cache_or_process(LOCAL_CAPS_FILE, ann_dir)
+
+    def read_caps_cache_or_process(self, LOCAL_CAPS_FILE, ann_dir):
+        if Path(LOCAL_CAPS_FILE).exists():
+            print("loading captions from cache...")
+            with open(LOCAL_CAPS_FILE, "r") as f:
+                self.caps = f.read().splitlines()
+        else:
+            print("parsing captions...")
+            self.caps = self.parse_annotations(Path(ann_dir))
+            with open(LOCAL_CAPS_FILE, "w") as f:
+                f.write("\n".join(self.caps))
+            print("saved captions to cache...")
+        return self.caps
 
     @staticmethod
     def combination(l1, l2):
@@ -104,23 +122,24 @@ class VisualGenomeCaptions(Dataset):
                 for s in _subj:
                     for o in _obj:
                         rels.add(f"{s}<sep>{_pred}<sep>{o}")
+        # cache object relationships
+
         del relationships
 
         print("parsing object attributes...")
         caps_obj = []
         for o in tqdm(objs.keys()):
             for a in objs[o]:
-                if a != "":
-                    caps_obj.append(f"{a} {o}")
+                if a != "":  # skip empty attributes
+                    caps_obj.append(f"{a} {o}")  # attribute + object
 
         print("parsing object relationships...")
         caps_rel = []
         for r in tqdm(rels):
             s, p, o = r.split("<sep>")
-            caps_rel.append(f"{s} {p} {o}")
+            caps_rel.append(f"{s} {p} {o}")  # subject + predicate + object
 
         caps = np.unique(caps_obj + caps_rel).tolist()
-
         return caps
 
     def __len__(self):
@@ -231,5 +250,9 @@ class CocoImageCrops(Dataset):
 
         captions = self.data[index]["captions"]
         idx = self.data[index]["image_id"]
-
+        # orig_image: (3, 224, 224)
+        # five_images: (5, 3, 224, 224)
+        # nine_images: (9, 3, 224, 224)
+        # captions: list of str
+        # idx: int (image id)
         return orig_image, five_images, nine_images, captions, idx

@@ -33,7 +33,7 @@ class CaptionRetriever(LightningModule):
     @staticmethod
     def load_caption_db(caption_db):
         print("Loading caption db")
-        keys, features, text = [], [], []
+        keys, features, text = [], [], []  # through text_projection, features are turned into keys
         with h5py.File(caption_db, "r") as f:
             for i in tqdm(range(len(f))):
                 keys_i = f[f"{i}/keys"][:]
@@ -52,34 +52,33 @@ class CaptionRetriever(LightningModule):
         print("Building db index")
         n, d = self.keys.shape
         K = round(8 * math.sqrt(n))
-        index = faiss.index_factory(d, f"IVF{K},Flat", faiss.METRIC_INNER_PRODUCT)
-
+        # index_factory: preprocess, quantizer, metric_type
+        index = faiss.index_factory(d, f"IVF{K},Flat", faiss.METRIC_INNER_PRODUCT)  # faiss.METRIC_INNER_PRODUCT means cosine similarity
         assert not index.is_trained
-        index.train(self.keys)
+        index.train(self.keys)  # train on the dataset, to set the centroids of the k-means
         assert index.is_trained
-        index.add(self.keys)
-        index.nprobe = max(1, K // 10)
+        index.add(self.keys)  # add vectors to the index
+        index.nprobe = max(1, K // 10)  # nprobe is the number of clusters to search
 
         faiss.write_index(index, str(idx_file))
 
         return index
 
     def search(self, images, topk):
-        features = self.clip.vision_model(pixel_values=images)[1]
-        query = self.clip.visual_projection(features)
+        features = self.clip.vision_model(pixel_values=images)[1]  # pooler_output is the last hidden state of the [CLS] token (bs, 768)
+        query = self.clip.visual_projection(features)  # (bs, 512)
         query = query / query.norm(dim=-1, keepdim=True)
         D, I = self.index.search(query.detach().cpu().numpy(), topk)
 
         return D, I
 
     def test_step(self, batch, batch_idx):
-        orig_imgs, five_imgs, nine_imgs, _, gt_caps, ids = batch # kuhn edited
+        orig_imgs, five_imgs, nine_imgs, gt_caps, ids = batch
         N = len(orig_imgs)
-
         with h5py.File(self.save_dir / "txt_ctx.hdf5", "a") as f:
-            D_o, I_o = self.search(orig_imgs, topk=self.k)  # N x self.k
-
-            D_f, I_f = self.search(torch.flatten(five_imgs, end_dim=1), topk=self.k)  # N*5 x self.k
+            D_o, I_o = self.search(orig_imgs, topk=self.k)  # D_o(distance): (query_N, topk), I_o(index): (query_N, topk)
+            ## torch.flatten(five_imgs, end_dim=1)  # (query_N, 5, 3, 224, 224) -> (query_N*5, 3, 224, 224)
+            D_f, I_f = self.search(torch.flatten(five_imgs, end_dim=1), topk=self.k)  # query_N*5 x self.k
             D_f, I_f = D_f.reshape(N, 5, self.k), I_f.reshape(N, 5, self.k)
 
             D_n, I_n = self.search(torch.flatten(nine_imgs, end_dim=1), topk=self.k)  # N*9 x self.k
@@ -93,7 +92,7 @@ class CaptionRetriever(LightningModule):
                 scores = D_o[i]
                 g2 = g1.create_group("whole")
                 g2.create_dataset("features", data=features)
-                g2.create_dataset("scores", data=scores)
+                g2.create_dataset("scores", data=scores)  # the distance between the query and the retrieved vectors
                 g2.create_dataset("texts", data=texts)
 
                 texts = [

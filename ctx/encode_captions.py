@@ -10,16 +10,24 @@ from transformers import CLIPModel
 
 import sys
 
+from utils import load_huggingface_model
+
 sys.path.append('.')
 from dataset import VisualGenomeCaptions, collate_tokens
+
+CLIP_MODEL_NAME = "openai/clip-vit-base-patch32"
+LOCAL_CLIP_FILE = "pretrained/clip-vit-base-patch32.pt"
 
 
 class CaptionDB(LightningModule):
     def __init__(self, save_dir):
         super().__init__()
-
         self.save_dir = save_dir
-        self.clip = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+        # self.clip: projection_dim_text_and_vision=512, text_embed_dim=512, visual_embed_dim=768
+        # self.clip.text_model: 512 -> 512
+        # self.clip.text_projection: 512 -> 512
+        # self.clip.visual_projection: 768 -> 512
+        self.clip = load_huggingface_model(CLIPModel, CLIP_MODEL_NAME, LOCAL_CLIP_FILE)
         self.clip.eval()
         for p in self.clip.parameters():
             p.requires_grad = False
@@ -27,10 +35,12 @@ class CaptionDB(LightningModule):
     def test_step(self, batch, batch_idx):
         if batch is None:
             return None
-
+        # captions: (batch_size, max_len)
+        # tokens: input_ids: (batch_size, max_len), attention_mask: (batch_size, max_len)
         captions, tokens = batch
         tokens = {k: v.to(self.device) for k, v in tokens.items()}
-
+        # self.clip.text_model(**tokens): last_hidden_state (bs, max_len, 512), pooler_output (bs, 512)
+        # So, It's extracting the pooler_output
         features = self.clip.text_model(**tokens)[1]
         keys = self.clip.text_projection(features)
         keys = keys / keys.norm(dim=-1, keepdim=True)
@@ -38,6 +48,9 @@ class CaptionDB(LightningModule):
         features = features.detach().cpu().numpy()
         keys = keys.detach().cpu().numpy()
 
+        # captions(list): bs
+        # features(ndarray): (bs, embed_dim)
+        # keys(ndarray): (bs, text_projection_dim)
         with h5py.File(self.save_dir / "caption_db.hdf5", "a") as f:
             g = f.create_group(str(batch_idx))
             g.create_dataset("keys", data=keys, compression="gzip")

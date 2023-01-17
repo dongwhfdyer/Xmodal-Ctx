@@ -161,5 +161,22 @@ def test_onehot_v3():
     print(output)
 
 
+from nltk.corpus import wordnet as wn
+
+
+def test_wordnet():
+    # download wordnet
+    import nltk
+    # nltk.download('wordnet')
+    word = wn.synsets("word")  # 同义词集
+    # 返回的 Synset('word.n.01')表示单词word在名词中的第1个释义;
+    print("同义词集：", word)
+    print("释义：", word[0].definition())
+    print("例句：", word[0].examples())
+    print("同一涵义对应的多个词条：", word[0].lemmas()[0])
+    print("同一涵义对应的多个词条的名称：", word[0].lemma_names())
+
+
 if __name__ == '__main__':
-    test_onehot_v3()
+    test_wordnet()
+    pass
