@@ -16,7 +16,7 @@ from transformers import CLIPModel, CLIPProcessor
 import sys
 
 sys.path.append('.')
-from dataset import CocoImageCrops, collate_crops
+from dataset import CocoImageCrops, collate_crops, CocoImage, collate_no_crops, gqaImage
 
 
 class CaptionRetriever(LightningModule):
@@ -29,6 +29,7 @@ class CaptionRetriever(LightningModule):
         self.keys, self.features, self.text = self.load_caption_db(caption_db)
         self.index = self.build_index(idx_file=self.save_dir / "faiss.index")
         self.clip = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+        self.image_caption_pairs = {}
 
     @staticmethod
     def load_caption_db(caption_db):
@@ -73,55 +74,11 @@ class CaptionRetriever(LightningModule):
         return D, I
 
     def test_step(self, batch, batch_idx):
-        orig_imgs, five_imgs, nine_imgs, gt_caps, ids = batch
+        orig_imgs, filenames = batch
         N = len(orig_imgs)
-        with h5py.File(self.save_dir / "txt_ctx.hdf5", "a") as f:
+        for i in range(N):
             D_o, I_o = self.search(orig_imgs, topk=self.k)  # D_o(distance): (query_N, topk), I_o(index): (query_N, topk)
-            ## torch.flatten(five_imgs, end_dim=1)  # (query_N, 5, 3, 224, 224) -> (query_N*5, 3, 224, 224)
-            D_f, I_f = self.search(torch.flatten(five_imgs, end_dim=1), topk=self.k)  # query_N*5 x self.k
-            D_f, I_f = D_f.reshape(N, 5, self.k), I_f.reshape(N, 5, self.k)
-
-            D_n, I_n = self.search(torch.flatten(nine_imgs, end_dim=1), topk=self.k)  # N*9 x self.k
-            D_n, I_n = D_n.reshape(N, 9, self.k), I_n.reshape(N, 9, self.k)
-
-            for i in range(N):
-                g1 = f.create_group(str(int(ids[i])))
-
-                texts = [self.text[j] for j in I_o[i]]
-                features = self.features[I_o[i]]
-                scores = D_o[i]
-                g2 = g1.create_group("whole")
-                g2.create_dataset("features", data=features)
-                g2.create_dataset("scores", data=scores)  # the distance between the query and the retrieved vectors
-                g2.create_dataset("texts", data=texts)
-
-                texts = [
-                    [
-                        self.text[I_f[i, j, k]]
-                        for k in range(self.k)
-                    ]
-                    for j in range(5)
-                ]
-                features = self.features[I_f[i].flatten()].reshape((5, self.k, -1))
-                scores = D_f[i]
-                g3 = g1.create_group("five")
-                g3.create_dataset("features", data=features)
-                g3.create_dataset("scores", data=scores)
-                g3.create_dataset("texts", data=texts)
-
-                texts = [
-                    [
-                        self.text[I_n[i, j, k]]
-                        for k in range(self.k)
-                    ]
-                    for j in range(9)
-                ]
-                features = self.features[I_n[i].flatten()].reshape((9, self.k, -1))
-                scores = D_n[i]
-                g4 = g1.create_group("nine")
-                g4.create_dataset("features", data=features)
-                g4.create_dataset("scores", data=scores)
-                g4.create_dataset("texts", data=texts)
+            self.image_caption_pairs[filenames[i]] = [self.text[j] for j in I_o[i]]
 
 
 def build_ctx_caps(args):
@@ -129,14 +86,15 @@ def build_ctx_caps(args):
         CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32").feature_extractor,
         lambda x: torch.FloatTensor(x["pixel_values"][0]),
     ])
-    dset = CocoImageCrops(args.dataset_root / "annotations", args.dataset_root, transform)
+    dset = gqaImage(args.dataset_root, transform)
+    # dset = CocoImage(args.dataset_root / "annotations", args.dataset_root, transform)
     dloader = DataLoader(
         dataset=dset,
         batch_size=args.batch_size,
         shuffle=False,
         drop_last=False,
         num_workers=args.num_workers,
-        collate_fn=collate_crops
+        collate_fn=collate_no_crops
     )
 
     cap_retr = CaptionRetriever(
@@ -146,21 +104,28 @@ def build_ctx_caps(args):
     )
 
     trainer = Trainer(
-        gpus=[args.device, ],
+        # fast_dev_run=True,
+        gpus=args.device,
         deterministic=True,
         benchmark=False,
-        default_root_dir=args.save_dir
+        default_root_dir=args.save_dir,
+        strategy="ddp"
     )
     trainer.test(cap_retr, dloader)
+    # save to json
+    import json
+    with open(args.save_dir / "image_caption_pairs.json", "w") as f:
+        json.dump(cap_retr.image_caption_pairs, f, indent=4)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Retrieve captions')
-    parser.add_argument('--device', type=int, default=0)
+    parser.add_argument('--device', type=int, default=[2, 3], nargs='+', help='GPU device')
     parser.add_argument('--exp_name', type=str, default='retrieved_captions')
-    parser.add_argument('--dataset_root', type=str, default='datasets/coco_captions')
+    parser.add_argument('--dataset_root', type=str, default='/home/szh2/datasets/gqa/images')
+    # parser.add_argument('--dataset_root', type=str, default='datasets/coco_captions')
     parser.add_argument('--caption_db', type=str, default='outputs/captions_db/caption_db.hdf5')
-    parser.add_argument('--k', type=int, default=16)
+    parser.add_argument('--k', type=int, default=5)
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--num_workers', type=int, default=12)
     args = parser.parse_args()

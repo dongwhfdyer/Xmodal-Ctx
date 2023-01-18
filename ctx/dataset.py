@@ -4,6 +4,8 @@ import numpy as np
 from pycocotools.coco import COCO as pyCOCO
 import json
 import itertools
+
+from torchvision.datasets import ImageFolder
 from tqdm import tqdm
 
 import torch
@@ -76,7 +78,7 @@ class VisualGenomeCaptions(Dataset):
                 self.caps = f.read().splitlines()
         else:
             print("parsing captions...")
-            self.caps = self.parse_annotations(Path(ann_dir))
+            self.caps = self.parse_annotations_v2(Path(ann_dir))
             with open(LOCAL_CAPS_FILE, "w") as f:
                 f.write("\n".join(self.caps))
             print("saved captions to cache...")
@@ -142,6 +144,33 @@ class VisualGenomeCaptions(Dataset):
         caps = np.unique(caps_obj + caps_rel).tolist()
         return caps
 
+    def parse_annotations_v2(self, ann_dir):
+        print("loading object attributes...")
+        objs = {}
+        with open(ann_dir / "attributes.json", "r") as f:
+            attributes = json.load(f)
+        for x in tqdm(attributes, dynamic_ncols=True):
+            for a in x["attributes"]:
+                _names = set(self.process_synset(y) for y in a.get("synsets", list()))
+                _attrs = set(self.process_word(y) for y in a.get("attributes", list()))
+
+                for n in _names:
+                    try:
+                        objs[n] |= _attrs
+                    except KeyError:
+                        objs[n] = _attrs
+        del attributes
+
+        print("parsing object attributes...")
+        caps_obj = []
+        for o in tqdm(objs.keys()):
+            for a in objs[o]:
+                if a != "":  # skip empty attributes
+                    caps_obj.append(f"{a} {o}")  # attribute + object
+
+        caps = np.unique(caps_obj).tolist()
+        return caps
+
     def __len__(self):
         return len(self.caps)
 
@@ -161,6 +190,15 @@ def collate_crops(data):
     idx = torch.LongTensor(list(idx))
 
     return orig_image, five_images, nine_images, captions, idx
+
+
+def collate_no_crops(data):
+    orig_image, filename = zip(*data)
+
+    orig_image = torch.stack(list(orig_image), dim=0)
+    filename = list(filename)
+
+    return orig_image, filename
 
 
 class CocoImageCrops(Dataset):
@@ -256,3 +294,77 @@ class CocoImageCrops(Dataset):
         # captions: list of str
         # idx: int (image id)
         return orig_image, five_images, nine_images, captions, idx
+
+
+class CocoImage(Dataset):
+    def __init__(self, ann_dir, img_root, transform=None):
+        self.transform = transform
+        self.data = self.parse(Path(ann_dir), Path(img_root))
+
+    @staticmethod
+    def parse(ann_dir, img_root):
+        ids = (
+            np.load(ann_dir / "coco_train_ids.npy"),
+            np.concatenate([
+                np.load(ann_dir / "coco_restval_ids.npy"),
+                np.load(ann_dir / "coco_dev_ids.npy"),
+                np.load(ann_dir / "coco_test_ids.npy")
+            ]),
+        )
+        coco = (
+            pyCOCO(ann_dir / "captions_train2014.json"),
+            pyCOCO(ann_dir / "captions_val2014.json"),
+        )
+        img_root = (img_root / "train2014", img_root / "val2014")
+
+        data = {}
+        for i in range(len(ids)):
+            for idx in ids[i]:
+                img_id = coco[i].anns[idx]["image_id"]
+                img_file = img_root[i] / coco[i].loadImgs(img_id)[0]["file_name"]
+                caption = coco[i].anns[idx]["caption"].strip()
+
+                if img_id in data:  # one image has multiple captions
+                    data[img_id]["captions"].append(caption)
+                else:
+                    data[img_id] = {
+                        "image_id": img_id,
+                        "image_file": img_file,
+                        "captions": [caption, ]
+                    }
+
+        data = list(data.values())
+        data.sort(key=lambda x: x["image_id"])
+
+        return data
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, index):
+        image = Image.open(self.data[index]["image_file"])
+        image = image.convert("RGB")
+
+        orig_image = self.transform(image)
+
+        idx = self.data[index]["image_id"]
+        file_name = self.data[index]["image_file"].stem
+        # orig_image: (3, 224, 224)
+        # idx: int (image id)
+        return orig_image, file_name
+
+class gqaImage(ImageFolder):
+    def __init__(self, root, transform):
+        self.transform = transform
+        self.image_files = list(Path(root).glob("*.jpg"))
+        self.image_files.sort()
+
+    def __len__(self):
+        return len(self.image_files)
+
+    def __getitem__(self, index):
+        image = Image.open(self.image_files[index])
+        image = image.convert("RGB")
+        image = self.transform(image)
+        file_name = self.image_files[index].stem
+        return image, file_name

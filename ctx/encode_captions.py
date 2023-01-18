@@ -71,17 +71,18 @@ def build_caption_db(args):
     cap_db = CaptionDB(args.save_dir)
 
     trainer = Trainer(
-        gpus=[args.device, ],
+        gpus=args.device ,
         deterministic=True,
         benchmark=False,
         default_root_dir=args.save_dir
+
     )
     trainer.test(cap_db, dloader)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Encode captions')
-    parser.add_argument('--device', type=int, default=0)
+    parser.add_argument('--device', type=int, default=[0,1,2,3], nargs='+', help='GPU device(s) to use')
     parser.add_argument('--exp_name', type=str, default='captions_db')
     parser.add_argument('--ann_dir', type=str, default='datasets/visual_genome')
     parser.add_argument('--batch_size', type=int, default=512)
