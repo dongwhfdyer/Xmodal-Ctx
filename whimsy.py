@@ -177,6 +177,9 @@ def test_wordnet():
     print("同一涵义对应的多个词条的名称：", word[0].lemma_names())
 
 
+
+
+
 if __name__ == '__main__':
     test_wordnet()
     pass

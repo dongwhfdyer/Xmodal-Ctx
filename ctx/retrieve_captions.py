@@ -86,8 +86,10 @@ def build_ctx_caps(args):
         CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32").feature_extractor,
         lambda x: torch.FloatTensor(x["pixel_values"][0]),
     ])
-    dset = gqaImage(args.dataset_root, transform)
-    # dset = CocoImage(args.dataset_root / "annotations", args.dataset_root, transform)
+    if "gqa" in args.exp_name:
+        dset = gqaImage(args.dataset_root, transform=transform)
+    elif "coco" in args.exp_name:
+        dset = CocoImage(args.dataset_root / "annotations", args.dataset_root, transform)
     dloader = DataLoader(
         dataset=dset,
         batch_size=args.batch_size,
@@ -120,12 +122,12 @@ def build_ctx_caps(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Retrieve captions')
-    parser.add_argument('--device', type=int, default=[2, 3], nargs='+', help='GPU device')
-    parser.add_argument('--exp_name', type=str, default='retrieved_captions')
-    parser.add_argument('--dataset_root', type=str, default='/home/szh2/datasets/gqa/images')
+    parser.add_argument('--device', type=int, default=[0, 1, 2, 3], nargs='+', help='GPU device')
+    parser.add_argument('--exp_name', type=str, default='retrieved_captions_gqa_100')  # todo: must be set
+    parser.add_argument('--dataset_root', type=str, default='/home/szh2/datasets/gqa/images')  # todo: must be set
     # parser.add_argument('--dataset_root', type=str, default='datasets/coco_captions')
-    parser.add_argument('--caption_db', type=str, default='outputs/captions_db/caption_db.hdf5')
-    parser.add_argument('--k', type=int, default=5)
+    parser.add_argument('--caption_db', type=str, default='ctx/outputs/captions_db/caption_db.hdf5')
+    parser.add_argument('--k', type=int, default=100)
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--num_workers', type=int, default=12)
     args = parser.parse_args()
