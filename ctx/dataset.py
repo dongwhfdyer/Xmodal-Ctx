@@ -353,6 +353,7 @@ class CocoImage(Dataset):
         # idx: int (image id)
         return orig_image, file_name
 
+
 class gqaImage(ImageFolder):
     def __init__(self, root, transform):
         self.transform = transform
@@ -367,4 +368,83 @@ class gqaImage(ImageFolder):
         image = image.convert("RGB")
         image = self.transform(image)
         file_name = self.image_files[index].stem
+        return image, file_name
+
+
+class CocoImage_for_mdetr(Dataset):
+    def __init__(self, root, transform):
+        #---------kkuhn-block------------------------------ # preprocess. Once done, just read the txt file below
+        final_mixed_train_json = Path("ctx/datasets/coco_captions/annotations/OpenSource/final_mixed_train.json")
+        with open(final_mixed_train_json, "r") as f:
+            json_content = json.load(f)
+        len(json_content["images"])
+        self.data = []
+        for image_info in json_content["images"]:
+            self.data.append(image_info["file_name"])
+        # find unique image ids
+        self.data = list(set(self.data))
+
+        self.data_only_coco = [i for i in self.data if "COCO" in i]
+        # save to file
+        with open("ctx/datasets/coco_captions/annotations/OpenSource/final_mixed_train_only_coco_unique.txt", "w") as f:
+            for i in self.data_only_coco:
+                f.write(i + "\n")
+        #---------kkuhn-block------------------------------
+
+        # ---------kkuhn-block------------------------------ if txt file did not exist, create it by the code above
+        root = Path("ctx/datasets/coco_captions/train2014")
+        with open("ctx/datasets/coco_captions/annotations/OpenSource/final_mixed_train_only_coco_unique.txt", "r") as f:
+            self.data_only_coco = f.read().splitlines()
+        self.data_only_coco_Path = [root / i for i in self.data_only_coco]
+        self.transform = transform
+        # ---------kkuhn-block------------------------------
+
+    def __len__(self):
+        return len(self.data_only_coco_Path)
+
+    def __getitem__(self, index):
+        image = Image.open(self.data_only_coco_Path[index])
+        image = image.convert("RGB")
+        image = self.transform(image)
+        file_name = self.data_only_coco_Path[index].stem
+        return image, file_name
+
+
+class gqaImage_for_mdetr(Dataset):
+    def __init__(self, root, transform):
+        #---------kkuhn-block------------------------------ # preprocess. Once done, just read the txt file below
+        final_mixed_train_json = Path("ctx/datasets/coco_captions/annotations/OpenSource/final_mixed_train.json")
+        with open(final_mixed_train_json, "r") as f:
+            json_content = json.load(f)
+        len(json_content["images"])
+        self.data = []
+        for image_info in json_content["images"]:
+            self.data.append(image_info["file_name"])
+        # find unique image ids
+        self.data = list(set(self.data)) # 88880
+
+
+        self.data_only_gqa = [i for i in self.data if "COCO" not in i] # 46380
+        # save to file
+        with open("ctx/datasets/coco_captions/annotations/OpenSource/final_mixed_train_only_gqa_unique.txt", "w") as f:
+            for i in self.data_only_gqa:
+                f.write(i + "\n")
+        #---------kkuhn-block------------------------------
+
+        #---------kkuhn-block------------------------------ # if txt file did not exist, create it by the code above
+        root = Path("/home/szh2/datasets/gqa/images")
+        with open("ctx/datasets/coco_captions/annotations/OpenSource/final_mixed_train_only_gqa_unique.txt", "r") as f:
+            self.data_only_gqa = f.read().splitlines()
+        self.data_only_gqa_Path = [root / i for i in self.data_only_gqa]
+        self.transform = transform
+        # ---------kkuhn-block------------------------------
+
+    def __len__(self):
+        return len(self.data_only_gqa_Path)
+
+    def __getitem__(self, index):
+        image = Image.open(self.data_only_gqa_Path[index])
+        image = image.convert("RGB")
+        image = self.transform(image)
+        file_name = self.data_only_gqa_Path[index].stem
         return image, file_name

@@ -1,5 +1,6 @@
 import copy
 import itertools
+import json
 from pathlib import Path
 
 from PIL import Image
@@ -177,9 +178,48 @@ def test_wordnet():
     print("同一涵义对应的多个词条的名称：", word[0].lemma_names())
 
 
+def add_two_json_together():
+    json1 = Path("outputs/retrieved_captions_coco_100/image_caption_pairs.json")
+    json2 = Path("outputs/retrieved_captions_gqa_100/image_caption_pairs_part.json")
 
+    with open(json1, 'r') as f:
+        data1 = json.load(f)
+    with open(json2, 'r') as f:
+        data2 = json.load(f)
+
+    data1.update(data2)
+
+    with open("outputs/retrieved_captions_coco_100/image_caption_pairs_all.json", 'w') as f:
+        json.dump(data1, f, indent=4)
+    # read json
+    with open("outputs/retrieved_captions_coco_100/image_caption_pairs_all.json", 'r') as f:
+        data = json.load(f)
+
+
+def test_data_integrity():
+    final_mixed_train_json = Path("ctx/datasets/coco_captions/annotations/OpenSource/final_mixed_train.json")
+    with open(final_mixed_train_json, "r") as f:
+        json_content = json.load(f)
+    len(json_content["images"])
+    data = []
+    for image_info in json_content["images"]:
+        data.append(image_info["file_name"])
+    # find unique image ids
+    data = list(set(data))
+
+    with open("outputs/retrieved_captions_coco_100/image_caption_pairs_all.json", 'r') as f:
+        pairs_all = json.load(f)
+
+    n = 0
+    for filename in data:
+        if filename[:-4] not in pairs_all:
+            print(filename[:-4])
+            n += 1
+    print(n)
+
+    print("--------------------------------------------------")
 
 
 if __name__ == '__main__':
-    test_wordnet()
+    test_data_integrity()
     pass

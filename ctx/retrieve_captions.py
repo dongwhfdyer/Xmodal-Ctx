@@ -16,7 +16,7 @@ from transformers import CLIPModel, CLIPProcessor
 import sys
 
 sys.path.append('.')
-from dataset import CocoImageCrops, collate_crops, CocoImage, collate_no_crops, gqaImage
+from dataset import CocoImageCrops, collate_crops, CocoImage, collate_no_crops, gqaImage, CocoImage_for_mdetr, gqaImage_for_mdetr
 
 
 class CaptionRetriever(LightningModule):
@@ -78,6 +78,8 @@ class CaptionRetriever(LightningModule):
         N = len(orig_imgs)
         for i in range(N):
             D_o, I_o = self.search(orig_imgs, topk=self.k)  # D_o(distance): (query_N, topk), I_o(index): (query_N, topk)
+            if filenames[i] in self.image_caption_pairs:
+                raise ValueError(f"Duplicate filename {filenames[i]}")
             self.image_caption_pairs[filenames[i]] = [self.text[j] for j in I_o[i]]
 
 
@@ -87,8 +89,9 @@ def build_ctx_caps(args):
         lambda x: torch.FloatTensor(x["pixel_values"][0]),
     ])
     if "gqa" in args.exp_name:
-        dset = gqaImage(args.dataset_root, transform=transform)
+        dset = gqaImage_for_mdetr(args.dataset_root, transform=transform)
     elif "coco" in args.exp_name:
+        dset = CocoImage_for_mdetr(args.dataset_root, transform=transform)
         dset = CocoImage(args.dataset_root / "annotations", args.dataset_root, transform)
     dloader = DataLoader(
         dataset=dset,
@@ -116,20 +119,36 @@ def build_ctx_caps(args):
     trainer.test(cap_retr, dloader)
     # save to json
     import json
+    # wait for all processes to finish
+    # with open(args.save_dir / "image_caption_pairs.json", "w") as f:
+    #     json.dump(cap_retr.image_caption_pairs, f)
+
+    aa = {}
+    for i, (k, v) in tqdm(enumerate(cap_retr.image_caption_pairs.items())):
+        aa[k] = v
+    print("--------------------------------------------------")
+
     with open(args.save_dir / "image_caption_pairs.json", "w") as f:
-        json.dump(cap_retr.image_caption_pairs, f, indent=4)
+        json.dump(aa, f)
+
+    # ---------kkuhn-block------------------------------ # read from json
+    with open(args.save_dir / "image_caption_pairs.json", "r") as f:
+        dd = json.load(f)
+    # ---------kkuhn-block------------------------------
+    print("--------------------------------------------------")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Retrieve captions')
-    parser.add_argument('--device', type=int, default=[0, 1, 2, 3], nargs='+', help='GPU device')
+    parser.add_argument('--device', type=int, default=[0], nargs='+', help='GPU device')
+    # parser.add_argument('--exp_name', type=str, default='retrieved_captions_coco_100')  # todo: must be set
     parser.add_argument('--exp_name', type=str, default='retrieved_captions_gqa_100')  # todo: must be set
     parser.add_argument('--dataset_root', type=str, default='/home/szh2/datasets/gqa/images')  # todo: must be set
     # parser.add_argument('--dataset_root', type=str, default='datasets/coco_captions')
     parser.add_argument('--caption_db', type=str, default='ctx/outputs/captions_db/caption_db.hdf5')
     parser.add_argument('--k', type=int, default=100)
     parser.add_argument('--batch_size', type=int, default=32)
-    parser.add_argument('--num_workers', type=int, default=12)
+    parser.add_argument('--num_workers', type=int, default=0)
     args = parser.parse_args()
 
     args.dataset_root = Path(args.dataset_root)
