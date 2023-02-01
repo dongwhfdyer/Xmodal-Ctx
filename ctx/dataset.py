@@ -372,8 +372,9 @@ class gqaImage(ImageFolder):
 
 
 class CocoImage_for_mdetr(Dataset):
-    def __init__(self, root, transform):
-        #---------kkuhn-block------------------------------ # preprocess. Once done, just read the txt file below
+    def __init__(self, root, ann_dir, transform):
+        root = Path(root)
+        # ---------kkuhn-block------------------------------ # preprocess. Once done, just read the txt file below
         final_mixed_train_json = Path("ctx/datasets/coco_captions/annotations/OpenSource/final_mixed_train.json")
         with open(final_mixed_train_json, "r") as f:
             json_content = json.load(f)
@@ -389,7 +390,7 @@ class CocoImage_for_mdetr(Dataset):
         with open("ctx/datasets/coco_captions/annotations/OpenSource/final_mixed_train_only_coco_unique.txt", "w") as f:
             for i in self.data_only_coco:
                 f.write(i + "\n")
-        #---------kkuhn-block------------------------------
+        # ---------kkuhn-block------------------------------
 
         # ---------kkuhn-block------------------------------ if txt file did not exist, create it by the code above
         root = Path("ctx/datasets/coco_captions/train2014")
@@ -412,7 +413,7 @@ class CocoImage_for_mdetr(Dataset):
 
 class gqaImage_for_mdetr(Dataset):
     def __init__(self, root, transform):
-        #---------kkuhn-block------------------------------ # preprocess. Once done, just read the txt file below
+        # ---------kkuhn-block------------------------------ # preprocess. Once done, just read the txt file below
         final_mixed_train_json = Path("ctx/datasets/coco_captions/annotations/OpenSource/final_mixed_train.json")
         with open(final_mixed_train_json, "r") as f:
             json_content = json.load(f)
@@ -421,17 +422,16 @@ class gqaImage_for_mdetr(Dataset):
         for image_info in json_content["images"]:
             self.data.append(image_info["file_name"])
         # find unique image ids
-        self.data = list(set(self.data)) # 88880
+        self.data = list(set(self.data))  # 88880
 
-
-        self.data_only_gqa = [i for i in self.data if "COCO" not in i] # 46380
+        self.data_only_gqa = [i for i in self.data if "COCO" not in i]  # 46380
         # save to file
         with open("ctx/datasets/coco_captions/annotations/OpenSource/final_mixed_train_only_gqa_unique.txt", "w") as f:
             for i in self.data_only_gqa:
                 f.write(i + "\n")
-        #---------kkuhn-block------------------------------
+        # ---------kkuhn-block------------------------------
 
-        #---------kkuhn-block------------------------------ # if txt file did not exist, create it by the code above
+        # ---------kkuhn-block------------------------------ # if txt file did not exist, create it by the code above
         root = Path("/home/szh2/datasets/gqa/images")
         with open("ctx/datasets/coco_captions/annotations/OpenSource/final_mixed_train_only_gqa_unique.txt", "r") as f:
             self.data_only_gqa = f.read().splitlines()
@@ -447,4 +447,44 @@ class gqaImage_for_mdetr(Dataset):
         image = image.convert("RGB")
         image = self.transform(image)
         file_name = self.data_only_gqa_Path[index].stem
+        return image, file_name
+
+
+class flickrImage_for_mdetr(Dataset):
+    def __init__(self, root, ann_dir, transform):
+        # ---------kkuhn-block------------------------------ # preprocess. Once done, just read the txt file below
+        ann_dir = Path(ann_dir)
+        final_mixed_train_json = ann_dir / "final_flickr_separateGT_train.json"
+        with open(final_mixed_train_json, "r") as f:
+            json_content = json.load(f)
+        len(json_content["images"])
+        self.data = []
+        for image_info in json_content["images"]:
+            self.data.append(image_info["file_name"])
+        # find unique image ids
+        self.data = list(set(self.data))  # 29783
+
+        self.data_only_flickr = self.data
+        # save to file
+        with open(ann_dir / "final_mixed_train_only_flickr_unique.txt", "w") as f:
+            for i in self.data_only_flickr:
+                f.write(i + "\n")
+        # ---------kkuhn-block------------------------------
+
+        # ---------kkuhn-block------------------------------ # if txt file did not exist, create it by the code above
+        root = Path(root)
+        with open(ann_dir / "final_mixed_train_only_flickr_unique.txt", "r") as f:
+            self.data_only_flickr = f.read().splitlines()
+        self.data_only_flickr_Path = [root / i for i in self.data_only_flickr]
+        self.transform = transform
+        # ---------kkuhn-block------------------------------
+
+    def __len__(self):
+        return len(self.data_only_flickr_Path)
+
+    def __getitem__(self, index):
+        image = Image.open(self.data_only_flickr_Path[index])
+        image = image.convert("RGB")
+        image = self.transform(image)
+        file_name = self.data_only_flickr_Path[index].stem
         return image, file_name

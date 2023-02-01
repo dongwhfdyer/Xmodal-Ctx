@@ -180,7 +180,7 @@ def test_wordnet():
 
 def add_two_json_together():
     json1 = Path("outputs/retrieved_captions_coco_100/image_caption_pairs.json")
-    json2 = Path("outputs/retrieved_captions_gqa_100/image_caption_pairs_part.json")
+    json2 = Path("outputs/retrieved_captions_gqa_100/image_caption_pairs.json")
 
     with open(json1, 'r') as f:
         data1 = json.load(f)
@@ -207,8 +207,12 @@ def test_data_integrity():
     # find unique image ids
     data = list(set(data))
 
-    with open("outputs/retrieved_captions_coco_100/image_caption_pairs_all.json", 'r') as f:
+    with open("outputs/retrieved_captions_coco_100/image_caption_pairs.json", 'r') as f:
         pairs_all = json.load(f)
+    len(pairs_all)
+
+    # with open("outputs/retrieved_captions_coco_100/image_caption_pairs_all.json", 'r') as f:
+    #     pairs_all = json.load(f)
 
     n = 0
     for filename in data:
@@ -221,5 +225,6 @@ def test_data_integrity():
 
 
 if __name__ == '__main__':
-    test_data_integrity()
+    # test_data_integrity()
+    add_two_json_together()
     pass

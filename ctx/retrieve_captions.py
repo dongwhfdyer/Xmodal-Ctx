@@ -1,4 +1,5 @@
 import argparse
+import json
 from pathlib import Path
 import h5py
 import numpy as np
@@ -16,7 +17,7 @@ from transformers import CLIPModel, CLIPProcessor
 import sys
 
 sys.path.append('.')
-from dataset import CocoImageCrops, collate_crops, CocoImage, collate_no_crops, gqaImage, CocoImage_for_mdetr, gqaImage_for_mdetr
+from dataset import CocoImageCrops, collate_crops, CocoImage, collate_no_crops, gqaImage, CocoImage_for_mdetr, gqaImage_for_mdetr, flickrImage_for_mdetr
 
 
 class CaptionRetriever(LightningModule):
@@ -89,10 +90,14 @@ def build_ctx_caps(args):
         lambda x: torch.FloatTensor(x["pixel_values"][0]),
     ])
     if "gqa" in args.exp_name:
-        dset = gqaImage_for_mdetr(args.dataset_root, transform=transform)
+        dset = gqaImage_for_mdetr(args.dataset_root, args.ann_dir, transform=transform)
     elif "coco" in args.exp_name:
-        dset = CocoImage_for_mdetr(args.dataset_root, transform=transform)
-        dset = CocoImage(args.dataset_root / "annotations", args.dataset_root, transform)
+        dset = CocoImage_for_mdetr(args.dataset_root, args.ann_dir, transform=transform)
+    elif "flickr" in args.exp_name:
+        dset = flickrImage_for_mdetr(args.dataset_root, args.ann_dir, transform=transform)
+    else:
+        raise Exception("no such datasets for {}".format(args.exp_name))
+        # dset = CocoImage(args.dataset_root / "annotations", args.dataset_root, transform)
     dloader = DataLoader(
         dataset=dset,
         batch_size=args.batch_size,
@@ -138,12 +143,61 @@ def build_ctx_caps(args):
     print("--------------------------------------------------")
 
 
+def add_two_json_together():
+    json1 = Path("outputs/retrieved_captions_coco_100/image_caption_pairs.json")
+    json2 = Path("outputs/retrieved_captions_gqa_100/image_caption_pairs.json")
+
+    with open(json1, 'r') as f:
+        data1 = json.load(f)
+    with open(json2, 'r') as f:
+        data2 = json.load(f)
+
+    data1.update(data2)
+
+    with open("outputs/retrieved_captions_coco_100/image_caption_pairs_all.json", 'w') as f:
+        json.dump(data1, f, indent=4)
+    # read json
+    with open("outputs/retrieved_captions_coco_100/image_caption_pairs_all.json", 'r') as f:
+        data = json.load(f)
+
+
+def test_data_integrity():
+    final_mixed_train_json = Path("ctx/datasets/coco_captions/annotations/OpenSource/final_mixed_train.json")
+    with open(final_mixed_train_json, "r") as f:
+        json_content = json.load(f)
+    len(json_content["images"])
+    data = []
+    for image_info in json_content["images"]:
+        data.append(image_info["file_name"])
+    # find unique image ids
+    data = list(set(data))
+
+    with open("outputs/retrieved_captions_coco_100/image_caption_pairs.json", 'r') as f:
+        pairs_all = json.load(f)
+    len(pairs_all)
+
+    # with open("outputs/retrieved_captions_coco_100/image_caption_pairs_all.json", 'r') as f:
+    #     pairs_all = json.load(f)
+
+    n = 0
+    for filename in data:
+        if filename[:-4] not in pairs_all:
+            print(filename[:-4])
+            n += 1
+    print(n)
+
+    print("--------------------------------------------------")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Retrieve captions')
     parser.add_argument('--device', type=int, default=[0], nargs='+', help='GPU device')
+    parser.add_argument('--ann_dir', type=str, default='ctx/datasets/coco_captions/annotations/OpenSource')
+    parser.add_argument('--exp_name', type=str, default='retrieved_captions_flickr_100')  # todo: must be set
+    parser.add_argument('--dataset_root', type=str, default='datasets/flickr30k-images')
+    # parser.add_argument('--exp_name', type=str, default='retrieved_captions_gqa_100')  # todo: must be set
+    # parser.add_argument('--dataset_root', type=str, default='/home/szh2/datasets/gqa/images')  # todo: must be set
     # parser.add_argument('--exp_name', type=str, default='retrieved_captions_coco_100')  # todo: must be set
-    parser.add_argument('--exp_name', type=str, default='retrieved_captions_gqa_100')  # todo: must be set
-    parser.add_argument('--dataset_root', type=str, default='/home/szh2/datasets/gqa/images')  # todo: must be set
     # parser.add_argument('--dataset_root', type=str, default='datasets/coco_captions')
     parser.add_argument('--caption_db', type=str, default='ctx/outputs/captions_db/caption_db.hdf5')
     parser.add_argument('--k', type=int, default=100)
