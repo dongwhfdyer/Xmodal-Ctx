@@ -1,3 +1,5 @@
+import os
+
 from PIL import Image
 from pathlib import Path
 import numpy as np
@@ -193,6 +195,16 @@ def collate_crops(data):
     return orig_image, five_images, nine_images, captions, idx
 
 
+def collate_crops_v2(data):
+    orig_image, five_images, nine_images, filenames = zip(*data)
+
+    orig_image = torch.stack(list(orig_image), dim=0)
+    five_images = torch.stack(list(five_images), dim=0)
+    nine_images = torch.stack(list(nine_images), dim=0)
+    filenames = list(filenames)
+    return orig_image, five_images, nine_images, filenames
+
+
 def collate_no_crops(data):
     orig_image, filename = zip(*data)
 
@@ -295,6 +307,94 @@ class CocoImageCrops(Dataset):
         # captions: list of str
         # idx: int (image id)
         return orig_image, five_images, nine_images, captions, idx
+
+
+class dataset_crop(CocoImageCrops):
+    def __init__(self, root, ann_dir, transform, dataset_name):
+        self.root = Path(root)
+        self.ann_dir = Path(ann_dir)
+        self.transform = transform
+        self.imgs = self.load_imgs()
+
+    def load_imgs(self):
+        imgs = []
+        for img_path in tqdm(self.root.glob("*.jpg")):
+            imgs.append(img_path)
+
+        return imgs
+
+    def __getitem__(self, index):
+        file_name = self.imgs[index].name
+        image = Image.open(self.imgs[index])
+        image = image.convert("RGB")
+
+        five_images = self.five_crop(image)
+        nine_images = self.nine_crop(image)
+        # trapezoid_images = self.trapezoid(image)
+
+        if self.transform is not None:
+            orig_image = self.transform(image)
+            five_images = torch.stack([self.transform(x) for x in five_images])
+            nine_images = torch.stack([self.transform(x) for x in nine_images])
+
+        # orig_image: (3, 224, 224)
+        # five_images: (5, 3, 224, 224)
+        # nine_images: (9, 3, 224, 224)
+        return orig_image, five_images, nine_images, file_name
+
+    def __len__(self):
+        return len(self.imgs)
+
+
+# create a dataset that inherits from ImageFolder
+class MyImageFolder(Dataset):
+    def __init__(self, root, transform=None):
+        self.transform = transform
+        # self.data is got by reading the image files under the root
+        self.root = Path(root)
+        self.data = os.listdir(root)
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, index):
+        file_name = self.data[index][:-4]
+        image = Image.open(self.root / self.data[index])
+        image = image.convert("RGB")
+
+        five_images = self.five_crop(image)
+        nine_images = self.nine_crop(image)
+
+        if self.transform is not None:
+            orig_image = self.transform(image)
+            five_images = torch.stack([self.transform(x) for x in five_images])
+            nine_images = torch.stack([self.transform(x) for x in nine_images])
+
+        return orig_image, five_images, nine_images, file_name
+
+    def five_crop(self, image, ratio=0.6):
+        w, h = image.size
+        hw = (h * ratio, w * ratio)
+
+        return F.five_crop(image, hw)
+
+    def nine_crop(self, image, ratio=0.4):
+        w, h = image.size
+
+        t = (0, int((0.5 - ratio / 2) * h), int((1.0 - ratio) * h))
+        b = (int(ratio * h), int((0.5 + ratio / 2) * h), h)
+        l = (0, int((0.5 - ratio / 2) * w), int((1.0 - ratio) * w))
+        r = (int(ratio * w), int((0.5 + ratio / 2) * w), w)
+        h, w = list(zip(t, b)), list(zip(l, r))
+
+        images = []
+        for s in itertools.product(h, w):
+            h, w = s
+            top, left = h[0], w[0]
+            height, width = h[1] - h[0], w[1] - w[0]
+            images.append(F.crop(image, top, left, height, width))
+
+        return images
 
 
 class CocoImage(Dataset):
